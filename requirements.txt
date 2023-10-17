@@ -1,0 +1,10 @@
+fastecdsa~=2.2.1
+icecream~=2.1.1
+base58~=0.2.2
+pygame==2.5.2
+mnemonic==0.20
+bitcoinlib==0.6.12
+pycryptodome==3.19.0
+pyotp==2.9.0
+qrcode==7.4.2
+Pillow==10.1.0
