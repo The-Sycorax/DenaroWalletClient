@@ -3,15 +3,23 @@ This repo contains the source code for a wallet client developed for the Denaro 
 
 Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro
 
-# Installation
+# Installation Guide:
 ```bash
+# Clone repository
 git clone https://github.com/The-Sycorax/DenaroWalletClient.git
 cd DenaroWalletClient
+
+# Update package list and install required library
+sudo apt update
 sudo apt install libgmp-dev
-pip install virtualenv
-sudo apt-get install python3-venv # Use this is pip installation fails for virtualenv
-python3 -m venv env
-source env/bin/activate
+
+# Setting Up a Python Virtual Environment (optional but recommended)
+# Install virtualenv with pip; if it fails apt is used
+pip install virtualenv || sudo apt install python3-venv
+# Create and activate the virtual environment
+python3 -m venv env && source env/bin/activate 
+
+#Install the required packages
 pip3 install -r requirements.txt
 ```
 
