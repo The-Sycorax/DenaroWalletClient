@@ -81,7 +81,7 @@ python wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wall
 
 ------------
 
-#### Address Generation
+#### Address Generation:
 ##### Examples:
 - Generates an address for a wallet that is un-encrypted and/or non-deterministic
 ```bash
@@ -94,7 +94,7 @@ python wallet_client.py generateaddress -wallet=wallet.json -password=SecurePass
 
 ------------
 
-#### Wallet Decryption
+#### Wallet Decryption:
 ##### Example:
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
