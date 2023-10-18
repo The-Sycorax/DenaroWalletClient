@@ -106,7 +106,7 @@ python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePass
 - *Addresses will only be filtered if they are apart of the wallet that is being decrypted.*
 - *One or more addresses can be specified.*
 - *If one or more fields are not specified then all fields are included in the filtered results (id, 
-mnemoinic, private_key, public_key, and address)*
+mnemonic, private_key, public_key, and address)*
 - *When it comes to filtering wallet entries, there is no difference if the `-filter` argument is used instead of the `filter` positional argument en vice versa. The results will be always be the same.*
 
 ##### Filtering Examples:
