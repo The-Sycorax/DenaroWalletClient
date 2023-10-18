@@ -59,7 +59,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 #### Generating New Wallets:
 *Note: The wallet filename does not require a .json extension to be added as it is entirely optional. The script will add the extension to the filename by default if not present.*
 
-*If the wallet specified already exists the user will be prompted with a standard warning and asked if they want to backup the existing wallet. The user will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet is they choose not to back it up. A password will be required if the existing wallet is encrypted. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password`.*
+*If the wallet specified already exists the user will be prompted with a standard warning and asked if they want to backup the existing wallet. The user will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet if they choose not to back it up. A password will be required if the existing wallet is encrypted. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to Usage section for details).*
 
 ##### Examples:
 - Generates an un-encrypted, non-deterministic wallet
@@ -108,7 +108,7 @@ python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePass
 - *Addresses will only be filtered if they are apart of the wallet that is being decrypted.*
 - *One or more addresses can be specified.*
 - *If one or more fields are not specified then all fields are included in the filtered results (id, 
-mnemonic, private_key, public_key, and address)*
+mnemonic, private_key, public_key, and address).*
 - *When it comes to filtering wallet entries, there is no difference if the `-filter` argument is used instead of the `filter` positional argument en vice versa. The results will be always be the same.*
 
 ##### Filtering Examples:
