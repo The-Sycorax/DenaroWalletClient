@@ -112,49 +112,49 @@ mnemoinic, private_key, public_key, and address)*
 *Note: The following addresses are used only for these examples.*
 
 <details>
-<summary>This filter will retrieve all of the data associated for `DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4`.</summary>
+<summary>This filter will retrieve all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4'.</summary>
   
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
 ```
 </details>
 <details>
-<summary>This filter excludes `DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4` from the results, and will only retrieve the data associated with the rest of the wallet entries if any.</summary>
+<summary>This filter excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' from the results, and will only retrieve the data associated with the rest of the wallet entries if any.</summary>
   
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
 ```
 </details>
 <details>
-<summary>This filter excludes `DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA` from the results, and will retrieve only the `mnemonic` associated with the rest of the wallet entries if any.</summary>
+<summary>This filter excludes 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'mnemonic' associated with the rest of the wallet entries if any.</summary>
 
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=mnemonic
 ```
 </details>
 <details>
-<summary>This filter will retrieve all of the data associated for `DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4` and `DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA`.</summary>
+<summary>This filter will retrieve all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA'.</summary>
 
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA}"
 ```
 </details>
 <details>
-<summary>This filter will retrieve only the `private_key` and `public_key` associated with `DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4` and `DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA`.</summary>
+<summary>This filter will retrieve only the 'private_key' and 'public_key' associated with 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA'.</summary>
   
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA},field={private_key,public_key}"
 ```
 </details>
 <details>
-<summary>This filter excludes `DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4` and `DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA` from the results, and will retrieve only the `public_key` and `id` associated with the rest of the wallet entries if any.</summary>
+<summary>This filter excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'public_key' and `id` associated with the rest of the wallet entries if any.</summary>
 
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=public_key,id
 ```
 </details>
 <details>
-<summary>This filter will retrieve only the `address` associated with all wallet entries.</summary>
+<summary>This filter will retrieve only the 'address' associated with all wallet entries.</summary>
   
 ```bash
 python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
