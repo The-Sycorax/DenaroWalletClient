@@ -5,7 +5,7 @@ Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro
 
 # Installation Guide:
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/The-Sycorax/DenaroWalletClient.git
 cd DenaroWalletClient
 
@@ -14,7 +14,7 @@ sudo apt update
 sudo apt install libgmp-dev
 
 # Setting Up a Python Virtual Environment (optional but recommended)
-# Install virtualenv with pip; if it fails apt is used
+# Install virtualenv with pip; if pip installation fails apt is used
 pip install virtualenv || sudo apt install python3-venv
 # Create and activate the virtual environment
 python3 -m venv env && source env/bin/activate 
