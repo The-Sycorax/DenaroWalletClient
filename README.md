@@ -49,7 +49,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 #### `decryptwallet filter`
 `decryptwallet filter` is basically the same as `decryptwallet -filter` but `-address` and `-field` are two separate arguments.
 
-*Note: This is a positional argument and should come directly after the other options for `decryptwallet`. Think of it as a sub-group `decryptwallet` but with it's own separate options.*
+*Note: This is a positional argument and should come directly after the other options for `decryptwallet`. Think of it as a sub-group of `decryptwallet` but with it's own separate options.*
 - `-address`: Address to filter entry by.
 - `-field`: Field(s) to filter by. Provide one or more of the following, separated by commas: `id`, `mnemonic`, `private_key`, `public_key`, `address`.
 - `-pretty`: Print formatted JSON output for better readability (Not required if already used).
@@ -64,19 +64,19 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 ##### Examples:
 - Generates an un-encrypted, non-deterministic wallet
 ```bash
-python wallet_client.py generatewallet -wallet=wallet.json
+python3 wallet_client.py generatewallet -wallet=wallet.json
 ```
 - Generates an encrypted, non-deterministic wallet
 ```bash
-python wallet_client.py generatewallet -encrypt -wallet=wallet.json -password=MySecurePassword
+python3 wallet_client.py generatewallet -encrypt -wallet=wallet.json -password=MySecurePassword
 ```
 - Generates a deterministic wallet
 ```bash
-python wallet_client.py generatewallet -deterministic -wallet=wallet.json -password=MySecurePassword
+python3 wallet_client.py generatewallet -deterministic -wallet=wallet.json -password=MySecurePassword
 ```
 - Generates an encrypted, deterministic wallet, with 2-Factor Authentication
 ```bash
-python wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wallet.json -password=MySecurePassword
+python3 wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
@@ -85,11 +85,11 @@ python wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wall
 ##### Examples:
 - Generates an address for a wallet that is un-encrypted and/or non-deterministic
 ```bash
-python wallet_client.py generateaddress -wallet=wallet.json
+python3 wallet_client.py generateaddress -wallet=wallet.json
 ```
 - Generates an address for a wallet that is encrypted and/or deterministic
 ```bash
-python wallet_client.py generateaddress -wallet=wallet.json -password=MySecurePassword
+python3 wallet_client.py generateaddress -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
@@ -97,7 +97,7 @@ python wallet_client.py generateaddress -wallet=wallet.json -password=MySecurePa
 #### Wallet Decryption:
 ##### Example:
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
@@ -118,48 +118,48 @@ mnemonic, private_key, public_key, and address).*
 <summary>This filter will retrieve all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4'.</summary>
   
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
 ```
 </details>
 <details>
 <summary>This filter excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' from the results, and will only retrieve the data associated with the rest of the wallet entries if any.</summary>
   
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
 ```
 </details>
 <details>
 <summary>This filter excludes 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'mnemonic' associated with the rest of the wallet entries if any.</summary>
 
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=mnemonic
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=mnemonic
 ```
 </details>
 <details>
 <summary>This filter will retrieve all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA'.</summary>
 
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA}"
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA}"
 ```
 </details>
 <details>
 <summary>This filter will retrieve only the 'private_key' and 'public_key' associated with 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA'.</summary>
   
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA},field={private_key,public_key}"
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA},field={private_key,public_key}"
 ```
 </details>
 <details>
 <summary>This filter excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'public_key' and `id` associated with the rest of the wallet entries if any.</summary>
 
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=public_key,id
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=public_key,id
 ```
 </details>
 <details>
 <summary>This filter will retrieve only the 'address' associated with all wallet entries.</summary>
   
 ```bash
-python wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
+python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
 ```
 </details>
