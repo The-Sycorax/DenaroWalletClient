@@ -9,6 +9,7 @@ sudo apt install libgmp-dev
 pip install virtualenv
 sudo apt-get install python3-venv # Use this is pip installation fails for virtualenv
 python3 -m venv env
+source env/bin/activate
 pip3 install -r requirements.txt
 ```
 
