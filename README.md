@@ -46,7 +46,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 - `-password`: The password used for encryption of the specified wallet (Required).
 - `-filter`: Filter wallet entries by address and/or field using the `-filter` argument. The format is `"address={ADDRESS},field={id,mnemonic,private_key,public_key,address}"`.
 
-##### `decryptwallet filter`
+#### `decryptwallet filter`
 `decryptwallet filter` is basically the same as `decryptwallet -filter` but `-address` and `-field` are two separate arguments.
 
 *Note: This is a positional argument and should come directly after the other options for `decryptwallet`. Think of it as a sub-group `decryptwallet` but with it's own separate options.*
