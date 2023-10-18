@@ -3,7 +3,7 @@ This repo contains the source code for a wallet client developed for the Denaro 
 
 Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro
 
-# Installation Guide:
+## Installation Guide:
 ```bash
 # Clone the repository
 git clone https://github.com/The-Sycorax/DenaroWalletClient.git
@@ -27,7 +27,7 @@ To Deactivate the Python Virtual Environment use:
 ```bash
 deactivate
 ```
-# Usage
+## Usage
 ### Command-Line Interface
 
 The wallet client provides a CLI for managing and decrypting wallet data. 
@@ -64,17 +64,17 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 
 *Note: This is a positional argument and should come directly after the other options for `decryptwallet`. Think of it as a sub-group of `decryptwallet` but with it's own separate options.*
 - `-address`: Address to filter entry by.
-- `-field`: Field(s) to filter by. Provide one or more of the following, separated by commas: `id`, `mnemonic`, `private_key`, `public_key`, `address`.
+- `-field`: Field(s) to filter by. Provide one or more of the following, separated by commas: id, mnemonic, private_key, public_key, address.
 - `-pretty`: Print formatted JSON output for better readability (Not required if already used).
 
 ------------
 ## Usage Examples:
-#### Generating New Wallets:
+### Generating New Wallets:
 *Note: The wallet filename does not require a .json extension to be added as it is entirely optional. The script will add the extension to the filename by default if not present.*
 
 *If the wallet specified already exists the user will be prompted with a standard warning and asked if they want to backup the existing wallet. The user will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet if they choose not to back it up. A password will be required if the existing wallet is encrypted. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to Usage section for details).*
 
-##### Examples:
+#### Examples:
 - Generates an un-encrypted, non-deterministic wallet
 ```bash
 python3 wallet_client.py generatewallet -wallet=wallet.json
@@ -94,8 +94,8 @@ python3 wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wal
 
 ------------
 
-#### Address Generation:
-##### Examples:
+### Address Generation:
+#### Examples:
 - Generates an address for a wallet that is un-encrypted and/or non-deterministic
 ```bash
 python3 wallet_client.py generateaddress -wallet=wallet.json
@@ -107,17 +107,17 @@ python3 wallet_client.py generateaddress -wallet=wallet.json -password=MySecureP
 
 ------------
 
-#### Wallet Decryption:
-##### Example:
+### Wallet Decryption:
+#### Example:
 ```bash
 python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
 
-#### Wallet Decryption with Filtering:
-##### Overview:
-- *To exclude specific addresses from the filtered results a hyphen ('-') can be added before the specified address.*
+### Wallet Decryption with Filtering:
+#### Overview:
+- *To exclude specific addresses from the filtered results a hyphen `-` can be added before the specified address.*
 - *Addresses will only be filtered if they are apart of the wallet that is being decrypted.*
 - *One or more addresses can be specified.*
 - *If one or more fields are not specified then all fields are included in the filtered results (id, 
@@ -125,8 +125,10 @@ mnemonic, private_key, public_key, and address).*
 - *When it comes to filtering wallet entries, there is no difference if the `-filter` argument is used instead of the `filter` positional argument en vice versa. The results will be always be the same.*
 - *Various filtering combinations can be used (See Filter Examples)*
 
-##### Filter Examples:
-*Note: The following addresses are used only for these examples.*
+#### Filter Examples:
+To get an idea of how filtering works, below are a few examples.
+
+*Note: The following addresses are used only for these examples and you should use your own.*
 
 <details>
 <summary>This filter will retrieve all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4'.</summary>
