@@ -12,14 +12,6 @@ import gc
 from collections import Counter, OrderedDict
 import re
 
-
-is_windows = os.name == 'nt'
-
-if is_windows:
-    import msvcrt
-else:
-    import termios, fcntl
-
 # Get the absolute path of the directory containing the current script.
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -29,6 +21,13 @@ sys.path.insert(0, dir_path + "/denaro/wallet")
 from denaro.key_generation import generate
 from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils
 from denaro.wallet.interface_util import QRCodeUtils, UserPrompts
+
+is_windows = os.name == 'nt'
+
+if is_windows:
+    import msvcrt
+else:
+    import termios, fcntl
 
 # Get the root logger
 root_logger = logging.getLogger()
@@ -75,6 +74,9 @@ def is_wallet_encrypted(data_segment):
         return False  # Data neither seems to be valid JSON nor valid Base64 encoded UTF-8 text
     
 def ensure_wallet_directories_exist():
+    """
+    Ensures the "./wallets" and  "./wallets/wallet_backups" directories exist
+    """
     os.makedirs("./wallets", exist_ok=True)
     os.makedirs(os.path.join("./wallets", 'wallet_backups'), exist_ok=True)
 
@@ -798,7 +800,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
         The end result should be a JSON dictionary which closely matches the un-encrypted version of the wallet data.
         
         The latter stages of the function provides options to filter and format entry data based on the given arguments.
-        Entry data can be filtered by a specific address or specific field names and then formatted according to the 
+        Entry data can be filtered by specific addresses or specific field names and then formatted according to the 
         `pretty` flag, yielding either a prettified JSON string or a dictionary. Details related to these specific arguments
         are provided in the main function.
         
@@ -914,7 +916,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
                 else:
                     not_found_inclusion.append(addr)
     
-        # Filter logic for exclusion
+        # Filter logic for address exclusion
         if addresses_to_exclude:
             unique_filtered_entries = [entry for entry in unique_filtered_entries if entry.get("address") not in addresses_to_exclude]
             if not unique_filtered_entries:
@@ -927,7 +929,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     
         # Check if there are any addresses not found for inclusion or exclusion
         if not_found_inclusion or not_found_exclusion:
-            not_found_all = list(set(not_found_inclusion + not_found_exclusion))  # Remove duplicates
+            not_found_all = list(set(not_found_inclusion + not_found_exclusion))
             not_found_all.sort(key=lambda x: address.index(x) if x in address else address.index('-' + x))
             print(f"Warning: The following {'address was' if len(not_found_all) == 1 else 'addresses were'} not found: {', '.join(not_found_all)}")
     
@@ -937,6 +939,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
                 print("All specified addresses are excluded. Returning no entries.")
             else:
                 print(f"Error: {'The address specified is not' if len(address) == 1 else 'None of the addresses specified are'} associated with this wallet. Returning all wallet entries...")
+        # Sort and return unique_filtered_entries
         else:
             unique_filtered_entries.sort(key=lambda x: x['id'])
             decrypted_entries = unique_filtered_entries
@@ -965,6 +968,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
 
     return formatted_output
 
+# Argparse Helper Functions
 def sort_arguments_based_on_input(argument_names):
     """
     Overview:
@@ -1052,21 +1056,22 @@ def check_args(parser,args):
 def process_decryptwallet_filter(args):
     """
     Overview:
-        This function manages the 'filter' subparser or the '-filter' option in the 'decryptwallet' command-line interface (CLI). 
-        It is tasked with extracting and returning specified filter options, which could be based on address and/or field parameters.
+        This function manages the '-filter' argument and 'filter' subparser in the 'decryptwallet' command-line interface.. 
+        It is tasked with extracting and returning specified filter options, which could be based on address and/or field.
         
-        - Only a single address can be filtered in one operation.
+        - One or more addresses can be filtered.
+        - Addresses can be excluded by adding a hyphen '-' to the begining of it.
         - Multiple field parameters are supported.
     
         Valid Field Parameters: id, mnemonic, private_key, public_key, address
     
         For the '-filter' Argument:
-        The expected input format is: "field={id,mnemonic,private_key,public_key,address},address={ADDRESS}"
-            - Parameters must be enclosed within curly braces ('{}').
+        The expected input format is: "field={id,mnemonic,private_key,public_key,address},address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...}"
+            - Parameters must be enclosed within curly braces '{}'.
             - The entire filter string must be enclosed in quotation marks.
         
         For 'filter' Subparser:
-        - Utilize the '-address' option to specify the address to be filtered.
+        - Utilize the '-address' option to specify one or more addresses to be filtered.
         - Utilize the '-field' option to specify one or more field parameters for filtering.
     
     Arguments:
@@ -1161,7 +1166,7 @@ def validate_filter_string(input_string):
     Validates the input string based on specific formatting rules for 'field' and 'address'.
     1. Checks basic syntax using regular expression.
     2. Checks for duplicate keys within each field set.
-    3. Checks for multiple occurrences of 'address'.
+    3. Checks for multiple occurrences of 'address' and 'field'.
     
     Parameters:
         input_string (str): The string to be validated.
@@ -1286,7 +1291,7 @@ def main():
     # Subparser for filter under decryptwallet
     filter_subparser = parser_decryptwallet.add_subparsers(dest='filter_subparser', required=False)
     parser_filter = filter_subparser.add_parser('filter')
-    parser_filter.add_argument('-address', help='Address to filter entry by.')
+    parser_filter.add_argument('-address', help='Provide one or more addresses to filter entry by.')
     parser_filter.add_argument('-field', help='Field(s) to filter by. Provide one or more of the following, separated by commas: id, mnemonic, private_key, public_key, address.')
     parser_filter.add_argument('-pretty', action='store_true', help="Print formatted json output for enhanced readability.", dest="filter_subparser_pretty")
 
