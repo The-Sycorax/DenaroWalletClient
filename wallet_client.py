@@ -1272,27 +1272,27 @@ def main():
     parser_generatewallet.add_argument('-deterministic', action='store_true', help="Generates a deterministic wallet.")
     parser_generatewallet.add_argument('-backup', choices=['False', 'True'], help="Enable or disable backup of an existing wallet.")
     parser_generatewallet.add_argument('-disable-overwrite-warning', dest='disable_overwrite_warning', action='store_true', help="Disable warning when overwriting an existing wallet.")
-    parser_generatewallet.add_argument('-overwrite-password', dest='overwrite_password', help="Password to overwrite an existing wallet.")
+    parser_generatewallet.add_argument('-overwrite-password', dest='overwrite_password', help="Password to overwrite an existing wallet that is encrypted.")
     
     # Subparser for generating a new address
     parser_generateaddress = subparsers.add_parser('generateaddress')
     parser_generateaddress.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_generateaddress.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_generateaddress.add_argument('-password', help="The original password used for wallet encryption and/or deterministic address generation.")
+    parser_generateaddress.add_argument('-password', help="The password used for encryption and/or deterministic address generation of the specified wallet file.")
     
     # Subparser for decrypting the wallet
     parser_decryptwallet = subparsers.add_parser('decryptwallet')
     parser_decryptwallet.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_decryptwallet.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
     parser_decryptwallet.add_argument('-pretty', action='store_true', help="Print formatted json output for enhanced readability.")
-    parser_decryptwallet.add_argument('-password', help="Password for decrypting the wallet.")
-    parser_decryptwallet.add_argument('-filter', help='Filter entries by address and/or field using the -filter argument. Format: "field={id,mnemonic,private_key,public_key,address},address={ADDRESS}". Parameters must be enclosed in curly braces ("\u007B\u007D") and the entire filter string must be enclosed in quotation marks.', default=None)
+    parser_decryptwallet.add_argument('-password', help="The password used for encryption of the specified wallet.")
+    parser_decryptwallet.add_argument('-filter', help='Filter entries by address and/or field. Add a hyphen (-) to the beginning of an address to exclude it. Format is: -filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id,mnemonic,private_key,public_key,address}". The entire filter string must be enclosed in quotation marks and parameters must be enclosed in curly braces ("\u007B\u007D").', default=None)
     
     # Subparser for filter under decryptwallet
     filter_subparser = parser_decryptwallet.add_subparsers(dest='filter_subparser', required=False)
-    parser_filter = filter_subparser.add_parser('filter')
-    parser_filter.add_argument('-address', help='Provide one or more addresses to filter entry by.')
-    parser_filter.add_argument('-field', help='Field(s) to filter by. Provide one or more of the following, separated by commas: id, mnemonic, private_key, public_key, address.')
+    parser_filter = filter_subparser.add_parser('filter',help="Filter entries by address and/or field")
+    parser_filter.add_argument('-address', help='One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. Format is: `address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`')
+    parser_filter.add_argument('-field', help='One or more fields to filter by. Format is: `field=id,mnemonic,private_key,public_key,address`.')
     parser_filter.add_argument('-pretty', action='store_true', help="Print formatted json output for enhanced readability.", dest="filter_subparser_pretty")
 
     args = parser.parse_args()
