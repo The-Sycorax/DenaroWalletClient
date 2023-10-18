@@ -1,5 +1,3 @@
-# Adding detailed comments for each individual line of code and technical overviews for functions
-
 # Importing required standard libraries
 import hashlib
 import json

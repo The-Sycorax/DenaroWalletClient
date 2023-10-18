@@ -11,8 +11,7 @@ import ctypes
 import gc
 from collections import Counter, OrderedDict
 import re
-from cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils
-from interface_util import QRCodeUtils, UserPrompts
+
 
 is_windows = os.name == 'nt'
 
@@ -24,10 +23,12 @@ else:
 # Get the absolute path of the directory containing the current script.
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-# Add the parent directory to the system path.
-sys.path.insert(0, dir_path + "/../../..")
-sys.path.insert(0, dir_path + "/../..")
+# Insert folder paths for modules
+sys.path.insert(0, dir_path + "/denaro")
+sys.path.insert(0, dir_path + "/denaro/wallet")
 from denaro.key_generation import generate
+from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils
+from denaro.wallet.interface_util import QRCodeUtils, UserPrompts
 
 # Get the root logger
 root_logger = logging.getLogger()
