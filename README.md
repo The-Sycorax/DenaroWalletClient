@@ -19,7 +19,7 @@ pip install virtualenv || sudo apt install python3-venv
 # Create and activate the virtual environment
 python3 -m venv env && source env/bin/activate 
 
-#Install the required packages
+# Install the required packages
 pip3 install -r requirements.txt
 ```
 
