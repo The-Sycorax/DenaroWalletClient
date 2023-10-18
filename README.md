@@ -68,15 +68,15 @@ python wallet_client.py generatewallet -wallet=wallet.json
 ```
 - Generates an encrypted, non-deterministic wallet
 ```bash
-python wallet_client.py generatewallet -encrypt -wallet=wallet.json -password=SecurePassword
+python wallet_client.py generatewallet -encrypt -wallet=wallet.json -password=MySecurePassword
 ```
 - Generates a deterministic wallet
 ```bash
-python wallet_client.py generatewallet -deterministic -wallet=wallet.json -password=SecurePassword
+python wallet_client.py generatewallet -deterministic -wallet=wallet.json -password=MySecurePassword
 ```
 - Generates an encrypted, deterministic wallet, with 2-Factor Authentication
 ```bash
-python wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wallet.json -password=SecurePassword
+python wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
@@ -89,7 +89,7 @@ python wallet_client.py generateaddress -wallet=wallet.json
 ```
 - Generates an address for a wallet that is encrypted and/or deterministic
 ```bash
-python wallet_client.py generateaddress -wallet=wallet.json -password=SecurePassword
+python wallet_client.py generateaddress -wallet=wallet.json -password=MySecurePassword
 ```
 
 ------------
