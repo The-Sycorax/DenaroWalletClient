@@ -15,6 +15,10 @@ source env/bin/activate
 pip3 install -r requirements.txt
 ```
 
+To Deactiveate the Python Virtual Environment use:
+```bash
+deactivate
+```
 # Usage
 ### Command-Line Interface
 
