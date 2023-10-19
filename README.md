@@ -87,7 +87,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-password`: Password used for decryption of the specified wallet (Required).
   
 * `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen (-) to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. 
- * Format: `-filter="address={ADDRESS,...},field={id,mnemonic,private_key,public_key,address}"`.
+  * Format is: `-filter="address={ADDRESS_1,ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"`.
 
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
@@ -99,10 +99,10 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 <dl><dd>
 
 * `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it.
-  * Format: `-address=ADDRESS_1,ADDRESS_2,...`
+  * Format is: `-address=ADDRESS_1,ADDRESS_2,...`
   
 * `-field`: One or more fields to filter by.
-  * Format: `-field=id,mnemonic,private_key,public_key,address`.
+  * Format is: `-field=id,mnemonic,private_key,public_key,address`.
   
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
