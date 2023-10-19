@@ -3,3 +3,4 @@ __pycache__/
 env
 denaro/wallet/wallets
 wallets
+testing.sh

@@ -17,10 +17,9 @@ import select
 import termios
 import sys
 import base64
-from cryptographic_util import VerificationUtils
+from cryptographic_util import VerificationUtils, DataManipulation
 
 close_qr_window = False
-
 
 is_windows = os.name == 'nt'
 
@@ -88,6 +87,7 @@ class QRCodeUtils:
         qr_img.paste(logo_img, logo_pos, logo_img)  
         
         # Return the final QR code image with the logo
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not qr_img])
         return qr_img  
 
     @staticmethod
@@ -121,6 +121,7 @@ class QRCodeUtils:
             draw.line([(x, 0), (x, height)], tuple(blended_color))  
         
         # Return the image with gradient applied
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not image])
         return image  
 
     @staticmethod
@@ -184,7 +185,8 @@ class QRCodeUtils:
                 screen.fill((255, 255, 255))
                 # Capture window close event
                 if event.type == pygame.QUIT:  
-                    pygame.quit()  
+                    pygame.quit()
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                     return
                 # Capture window resize event
                 elif event.type == pygame.VIDEORESIZE:  
@@ -247,6 +249,7 @@ class QRCodeUtils:
             pygame.display.flip()
 
         # Quit pygame when the countdown reaches zero or the window is closed
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         pygame.quit()
 
     @staticmethod
@@ -273,6 +276,7 @@ class QRCodeUtils:
                 line = (line + ' ' + words.pop(0)).strip()  
             lines.append(line)  
         # Return the wrapped lines
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not lines])
         return lines 
     
     def close_qr_window(value):
@@ -361,6 +365,7 @@ class UserPrompts:
                 password_confirm = password_input
             # Check if the passwords match
             if password_input == password_confirm:
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not password_input])
                 return password_input
             else:
                 print("Passwords do not match. Please try again.")
@@ -507,9 +512,13 @@ class UserPrompts:
                 # Create the backup
                 shutil.copy(filename, backup_path)
                 print(f"Backup created at {backup_path}\n")
-                return True
+                result = True
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+                return result
+
             except Exception as e:
                 logging.error(f" Could not create backup: {e}\n")
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return
         else:
             # Handle the overwrite preference
@@ -527,10 +536,12 @@ class UserPrompts:
                     # Verify the provided password against the stored verifier
                     if not VerificationUtils.verify_password(base64.b64decode(data["wallet_data"]["verifier"].encode('utf-8')), password_input, base64.b64decode(data["wallet_data"]["verification_salt"])):
                         logging.error("Authentication failed or wallet data is corrupted.")
+                        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                         return
                 print()
                 # Call wait_for_input and allow up to 5 seconds for the user to cancel overwrite operation
                 if not UserPrompts.wait_for_input(timeout=5):
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                     return
                 # If no input is recieved within 5 seconds then continue
                 else:
@@ -542,9 +553,13 @@ class UserPrompts:
                             print("\nWallet data erased.")
                     except Exception as e:
                         logging.error(f" Could not write to file: {e}")
+                        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                         return
-                    return True                
+                    result = True
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+                    return result
             else:
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return
     
     @staticmethod
@@ -570,7 +585,9 @@ class UserPrompts:
                 # Exit if the user chooses to quit
                 if totp_code.lower() == '/q':
                     logging.info("User exited before providing a valid Two-Factor Authentication code.\n")
-                    return False                
+                    result = False
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+                    return result
                 # Check if the totp_code is provided
                 if not totp_code:
                     logging.error("No Two-Factor Authentication code provided. Please enter a valid Two-Factor Authentication code.\n")
@@ -588,8 +605,11 @@ class UserPrompts:
                     continue
             # Validate the TOTP code using utility method
             if VerificationUtils.validate_totp_code(data, totp_code):
-                return {"valid": True, "totp_secret": data}
+                result = {"valid": True, "totp_secret": data}
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+                return result
             else:
                 logging.error("Authentication failed. Please try again.\n")
                 # Reset TOTP code and continue the loop
                 totp_code = None
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])

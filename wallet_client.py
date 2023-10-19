@@ -19,7 +19,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, dir_path + "/denaro")
 sys.path.insert(0, dir_path + "/denaro/wallet")
 from denaro.key_generation import generate
-from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils
+from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils, DataManipulation
 from denaro.wallet.interface_util import QRCodeUtils, UserPrompts
 
 is_windows = os.name == 'nt'
@@ -138,71 +138,13 @@ def _save_data(filename, data):
         with open(filename, 'w') as f:
             if data:
                 json.dump(data, f, indent=4)
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             else: 
                 f = data
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
     except Exception as e:
         logging.error(f"Error saving data to file: {str(e)}")
-
-# Memory Functions
-def secure_cleanup(variables):
-    """
-    Overview:
-    The `secure_cleanup` function is a dedicated utility to enhance security by ensuring that sensitive variables
-    are not only deleted but also purged from memory. By leveraging both the `secure_delete` function and Python's
-    garbage collection, it aims to minimize potential risks associated with lingering sensitive data in memory.
-    
-    Arguments:
-    - var (various types): The variable which needs to be securely deleted and its memory overwritten.
-    
-    Returns:
-    - None: The function operates in-place, directly modifying memory without returning values.
-    """
-    # Call the secure_delete function to wipe variables from memory
-    secure_delete(variables)
-    # Explicitly invoke the garbage collector
-    gc.collect()
-
-def secure_delete(var):
-    """Overview:
-        In environments where security is paramount, simply deleting a variable might not be enough due to the way 
-        memory management in Python works. This function aims to securely delete a variable by overwriting its memory 
-        footprint with zeros, thus ensuring that sensitive data does not linger in memory. By employing both native Python 
-        techniques and lower-level memory operations, it ensures that sensitive data remnants are minimized, reducing 
-        exposure to potential threats.
-        
-        Arguments:
-        - var (various types): The variable which needs to be securely deleted and its memory overwritten.
-        
-        Returns:
-        - None: This function works by side-effect, modifying memory directly.
-    """
-    try:
-        # Attempt to get the memory size of the variable using ctypes
-        var_size = ctypes.sizeof(var)
-        # Create a byte array of zeros with the size of the variable
-        zeros = (ctypes.c_byte * var_size)()
-        # Retrieve the memory address of the variable
-        var_address = id(var)
-        # Overwrite the variable's memory location with zeros
-        ctypes.memmove(var_address, zeros, var_size)
-    except TypeError:
-        # Handle different types of variables
-        if isinstance(var, (str, bytes)):
-            var = '0' * len(var)
-        elif isinstance(var, (list, tuple)):
-            for i in range(len(var)):
-                var[i] = None
-        elif isinstance(var, dict):
-            for key in var:
-                var[key] = None
-        else:
-            # For other unsupported types, just reassign to None
-            var = None
-    finally:
-        # Explicitly delete the variable reference
-        del var
-        # Call the garbage collector to remove any lingering data
-        gc.collect()
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
  
 # Wallet Helper Functions
 def generate_encrypted_wallet_data(wallet_data, current_data, password, totp_secret, hmac_salt, verification_salt, stored_verifier):
@@ -237,7 +179,9 @@ def generate_encrypted_wallet_data(wallet_data, current_data, password, totp_sec
         desired_key_order = ["id", "mnemonic"]
         ordered_entry = OrderedDict((k, encrypted_wallet_data[k]) for k in desired_key_order if k in encrypted_wallet_data)
         encrypted_wallet_data = ordered_entry
-    return encrypted_wallet_data
+    result = encrypted_wallet_data
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def generate_unencrypted_wallet_data(wallet_data, current_data):
     """Overview:
@@ -267,7 +211,9 @@ def generate_unencrypted_wallet_data(wallet_data, current_data):
         desired_key_order = ["id", "mnemonic", "private_key", "public_key", "address"]
         ordered_entry = OrderedDict((k, unencrypted_wallet_data[k]) for k in desired_key_order if k in unencrypted_wallet_data)
         unencrypted_wallet_data = ordered_entry
-    return unencrypted_wallet_data
+    result = unencrypted_wallet_data
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, deterministic):
     """Overview:
@@ -311,7 +257,7 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
     # Password is mandatory for encrypted wallets
     if not password:
         logging.error("Password is required for encrypted wallets.\n")
-        secure_cleanup(data)
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None, None, None, None, None
 
     # Generate random salts for HMAC and password verification
@@ -337,7 +283,7 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
 
         totp_qr_data = f'otpauth://totp/{filename}?secret={totp_secret}&issuer=Denaro Wallet Client'
         # Generate a QR code for the TOTP secret
-        qr_img = QRCodeUtils.generate_qr_with_logo(totp_qr_data, "denaro_logo_3.png")
+        qr_img = QRCodeUtils.generate_qr_with_logo(totp_qr_data, "./denaro/wallet/denaro_logo_3.png")
         # Threading is used to show the QR window to the user while allowing input in the temrinal
         thread = threading.Thread(target=QRCodeUtils.show_qr_with_timer, args=(qr_img, filename, totp_secret,))
         thread.start()
@@ -349,7 +295,7 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
         # Validate the TOTP setup
         if not UserPrompts.handle_2fa_validation(totp_secret, totp_code):
             QRCodeUtils.close_qr_window(True)
-            secure_cleanup([data, totp_secret, qr_img, thread])
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             return None, None, None, None, None
         else:
             QRCodeUtils.close_qr_window(True)
@@ -361,7 +307,9 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
         data["wallet_data"]["totp_secret"] = encrypted_totp_secret
         totp_secret = ""
 
-    return data, totp_secret, hmac_salt, verification_salt, verifier
+    result = data, totp_secret, hmac_salt, verification_salt, verifier
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic):
     """
@@ -385,8 +333,9 @@ def verify_password_and_hmac(data, password, hmac_salt, verification_salt, deter
         hmac_msg += json.dumps(data["wallet_data"]["entry_data"]["key_data"]).encode()
     stored_hmac = base64.b64decode(data["wallet_data"]["hmac"].encode('utf-8'))
     hmac_verified = VerificationUtils.hmac_util(password=password, hmac_salt=hmac_salt, stored_hmac=stored_hmac, hmac_msg=hmac_msg, verify=True)
-    
-    return password_verified, hmac_verified, stored_verifier
+    result = password_verified, hmac_verified, stored_verifier
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def update_or_reset_attempts(data, hmac_salt, password_verified, filename, deterministic):
     """
@@ -442,6 +391,8 @@ def update_or_reset_attempts(data, hmac_salt, password_verified, filename, deter
         data = None
     # Save the updated wallet data
     _save_data(filename, data)
+    # Securely delete sensitive variables
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
 
 def handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic):
     """
@@ -460,7 +411,7 @@ def handle_existing_encrypted_wallet(filename, data, password, totp_code, determ
     # Fail if no password is provided for an encrypted wallet
     if not password:
         logging.error("Password is required for encrypted wallets.")
-        secure_cleanup([data])
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None, None, None, None
 
     # Decode salts for verification
@@ -479,18 +430,19 @@ def handle_existing_encrypted_wallet(filename, data, password, totp_code, determ
     # Fail if either the password or HMAC verification failed
     if not (password_verified and hmac_verified):
         logging.error("Authentication failed or wallet data is corrupted.")
-        secure_cleanup([data])
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None, None, None, None
 
     # If 2FA is enabled, handle the TOTP validation
     totp_secret, tfa_enabled = VerificationUtils.verify_totp_secret(password, data["wallet_data"]["totp_secret"], hmac_salt, verification_salt, stored_verifier)
     if tfa_enabled:
-        result = UserPrompts.handle_2fa_validation(totp_secret, totp_code)
-        if not result or not result.get("valid"):
-            secure_cleanup([data])
+        tfa_valid = UserPrompts.handle_2fa_validation(totp_secret, totp_code)
+        if not tfa_valid or not tfa_valid.get("valid"):
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             return None, None, None, None
-
-    return hmac_salt, verification_salt, stored_verifier, totp_secret
+    result = hmac_salt, verification_salt, stored_verifier, totp_secret
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def parse_and_encrypt_mnemonic(words, password, totp_secret, hmac_salt, verification_salt, stored_verifier):
     """Overview:
@@ -517,6 +469,7 @@ def parse_and_encrypt_mnemonic(words, password, totp_secret, hmac_salt, verifica
     
     # Ensure there are exactly 12 words in the mnemonic (standard mnemonic length)
     if len(word_list) != 12:
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         raise ValueError("Input should contain exactly 12 words")
     
     # Encrypt each word, and structure it in a dictionary with its ID
@@ -529,8 +482,9 @@ def parse_and_encrypt_mnemonic(words, password, totp_secret, hmac_salt, verifica
             password, totp_secret, hmac_salt, verification_salt, stored_verifier
         ) for i, word in enumerate(word_list)
     ]
-    
-    return encrypted_key_data
+    result = encrypted_key_data
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt, verification_salt, stored_verifier):
     """Overview:
@@ -555,7 +509,10 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
             password, totp_secret, hmac_salt, verification_salt, stored_verifier
         ) for encrypted_index in encrypted_json
     ]
-    return " ".join(decrypted_words)
+    result =  " ".join(decrypted_words)
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
+
 
 # Wallet Orchestrator Functions
 def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None,from_cli=False):
@@ -611,6 +568,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     
     # If wallet dose not exist return None
     if not new_wallet and not wallet_exists:
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None
     
     if new_wallet:
@@ -623,7 +581,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         # Check if the wallet data is encrypted and if a password is provided
         if is_wallet_encrypted(data_segment) and not password and not new_wallet:
             logging.error("Wallet is encrypted. Password is required to add additional addresses.")
-            secure_cleanup(data)  # Securely remove sensitive data from memory
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             return None
         if is_wallet_encrypted(data_segment):
             # If encrypted and password is provided, set encrypt flag to True
@@ -637,6 +595,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     #Handle backup and overwrite for an existing wallet
     if new_wallet and wallet_exists:
         if not UserPrompts.backup_and_overwrite_helper(data,filename,overwrite_password,encrypt,backup,disable_warning,from_cli):
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             return
         
     if new_wallet:
@@ -652,6 +611,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             data, totp_secret, hmac_salt, verification_salt, stored_verifier = handle_new_encrypted_wallet(password, totp_code, use2FA, filename, deterministic)
             if not data:
                 logging.error(f"Error: Data from handle_new_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return None
         else:
             print("new_wallet is set to False")
@@ -660,13 +620,15 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             # Handle operations on an existing encrypted wallet
             hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
             if not hmac_salt or not verification_salt or not stored_verifier:
-                #logging.error(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+                logging.error(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return None
 
     # If deterministic flag is set, generate addresses in a deterministic way
     if deterministic:
         if not password:
                 logging.error("Password is required to derive the deterministic address")
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return None
         if new_wallet:            
             print("deterministic is set to True")
@@ -712,6 +674,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 if first_child_data["private_key"] != data["wallet_data"]["entry_data"]["entries"][0]["private_key"]:
                     # Log an error message if the private keys do not match, indicating that the provided passphrase is incorrect.
                     logging.error("Invalid passphrase. To derive the deterministic address, please re-enter the correct passphrase and try again.")
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                     return None
                 else:
                     # Generate the new address based on the existing mnemonic
@@ -760,9 +723,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     _save_data(filename, data)
     # Extract the newly generated address to be returned
     result = wallet_data['address']
-    # Securely remove sensitive data from memory
-    secure_cleanup([wallet_data, data])
-
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
     return result
 
 def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=[], pretty=False):
@@ -827,11 +788,13 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
 
     # If wallet dose not exist return None
     if not wallet_exists:
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None
     
     # Convert the wallet data segment to a JSON string and check if it appears to be encrypted
     data_segment = json.dumps(data["wallet_data"])
     if not is_wallet_encrypted(data_segment):
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         raise ValueError("Wallet data does not appear to be encrypted.")
     
     # Initialize a flag to check if the wallet type is deterministic
@@ -847,6 +810,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     # Ensure none of the cryptographic values are missing
     if not hmac_salt or not verification_salt or not stored_verifier:
         #print(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         return None    
     
     # If the wallet is deterministic, decrypt and parse the mnemonic phrase
@@ -965,8 +929,9 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
             formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries}})
         else:
             formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries}})
-
-    return formatted_output
+    result = formatted_output
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 # Argparse Helper Functions
 def sort_arguments_based_on_input(argument_names):
@@ -1301,17 +1266,21 @@ def main():
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa,deterministic=args.deterministic,backup=args.backup,disable_warning=args.disable_overwrite_warning,overwrite_password=args.overwrite_password,from_cli=True)    
         if address:
             logging.info(f"Successfully generated new wallet. Address: {address}\n")
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
 
     elif args.command == "generateaddress":
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False,from_cli=True)    
         if address:
             logging.info(f"Successfully generated address and stored wallet entry. Address: {address}\n")
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
 
     elif args.command == 'decryptwallet':
         address, field, args.filter_subparser_pretty = process_decryptwallet_filter(args)
         decrypted_data = decryptWalletEntries(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", address=address if address else None, fields=field if field else [], pretty=args.pretty or args.filter_subparser_pretty if args.pretty or args.filter_subparser_pretty else False)
         if decrypted_data:
             print(f'\nWallet Data:\n"{decrypted_data}"')
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
 
 if __name__ == "__main__":
     try:
@@ -1320,7 +1289,9 @@ if __name__ == "__main__":
         print("\r\n  ")
         print("\rProcess terminated by user.\n")
         QRCodeUtils.close_qr_window(True)
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         sys.exit(1)
