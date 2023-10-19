@@ -35,10 +35,10 @@ The wallet client provides a CLI for managing and decrypting wallet data.
 The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and `decryptwallet`) and their corresponding options.
 
 ### Sub-Commands:
+<dl><dd>
 
 #### `generatewallet`
-<details>
-<summary>Options</summary>
+<dl><dd><details><summary>Options</summary>
 
 *Note: `-password` must be set for encrypted and/or deterministic wallets.*
 * `-wallet`: Specify the wallet filename (Required).
@@ -49,21 +49,19 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-backup`: Enables or disables the backup of an existing wallet. Choose either 'True' or 'False'.
 * `-disable-overwrite-warning`: Disables warning when overwriting an existing wallet.
 * `-overwrite-password`: Password to overwrite an existing wallet that is encrypted.
-</details>
+</details></dd></dl>
 
 #### `generateaddress`
-<details>
-<summary>Options</summary>
+<dl><dd><details><summary>Options</summary>
 
 *Note: `-password` must be set if the wallet specified is encrypted and/or deterministic.*
 * `-wallet`: Specify the wallet filename (Required).
 * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
 * `-password`: The password used for encryption and/or deterministic address generation of the specified wallet.
-</details>
+</details></dd></dl>
 
 #### `decryptwallet`
-<details>
-<summary>Options</summary>
+<dl><dd><details><summary>Options</summary>
 
 *Note: `decryptwallet` will not work if a wallet is unencrypted.*
 * `-wallet`: Specify the wallet filename (Required).
@@ -72,29 +70,35 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-filter`: Filter wallet entries by address and/or field. Add a hyphen (-) to the beginning of an address to exclude it. 
 The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id,mnemonic,private_key,public_key,address}"`.The entire filter string must be enclosed in quotation marks and parameters must be enclosed in curly braces `{}`
 * `-pretty`: Print formatted JSON output for better readability.
-</details>
+</details></dd></dl>
 
 #### `decryptwallet filter`
-<details>
-<summary>Options</summary>
+<dl><dd><details><summary>Options</summary>
 
 *Note: Using `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. Also this is a positional argument, therefore it should come directly after the other options for `decryptwallet`.*
 
 * `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. The format is: `filter address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`
 * `-field`: One or more fields to filter by. The format is: `filter field=id,mnemonic,private_key,public_key,address`.
 * `-pretty`: Print formatted JSON output for better readability.
-</details>
+</details></dd></dl>
+
+</dl></dd>
 
 ------------
 
 ## Usage Examples:
 
 ### Generating New Wallets:
+<details>
+<dl><dd>
 *Note: The wallet filename does not require a .json extension to be added as it is entirely optional. The script will add the extension to the filename by default if not present.*
+</dd><dd>
 
 *If the wallet specified already exists the user will be prompted with a standard warning and asked if they want to backup the existing wallet. If the user chooses not to back up an existing wallet, then they will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet. A password will be required to overwrite an existing wallet if it is encrypted. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to [generatewallet](#generatewallet) options for details).*
+</dd></dl>
 
-#### Examples:
+<summary>Examples:</summary>
+
 * Generates an un-encrypted, non-deterministic wallet:
     ```bash
     python3 wallet_client.py generatewallet -wallet=wallet.json
@@ -111,11 +115,12 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
     ```bash
     python3 wallet_client.py generatewallet -encrypt -deterministic -2fa -wallet=wallet.json -password=MySecurePassword
     ```
-
-------------
+</details>
 
 ### Address Generation:
-#### Examples:
+<details>
+<summary>Examples:</summary>
+
 * Generates an address for a wallet that is un-encrypted and/or non-deterministic:
     ```bash
     python3 wallet_client.py generateaddress -wallet=wallet.json
@@ -124,20 +129,22 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
     ```bash
     python3 wallet_client.py generateaddress -wallet=wallet.json -password=MySecurePassword
     ```
-
-------------
+</details>
 
 ### Wallet Decryption:
-#### Example:
+<details>
+<summary>Example:</summary>
+
 * Decrypts an entire wallet:
     ```bash
     python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
     ```
-
-------------
+</details>
 
 ### Wallet Decryption with Filtering:
-#### Overview:
+<details>
+<summary>Overview:</summary>
+
 * *To exclude specific addresses from the filtered results a hyphen `-` can be added before the specified address.*
 * *One or more addresses can be specified.*
 * *Addresses will only be filtered if they are apart of the wallet that is being decrypted.*
@@ -145,9 +152,12 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
 mnemonic, private_key, public_key, and address).*
 * *When it comes to filtering wallet entries, there is no difference if the `-filter` option is used over of the `filter` positional argument et vice versa. The results will be always be the same.*
 * *Various filtering combinations can be used.*
-
-#### Filter Examples:
+</details>
 <details>
+<summary>Filter Examples:</summary>
+
+<dl>
+<dd>
 To get an idea of how filtering works, below are a few examples.
 
 *Note: The following addresses are used only for these examples and you should use your own.*
@@ -201,7 +211,8 @@ python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePas
 python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
 ```
 </details>
-
+</dd>
+</dl>
 </details>
 
 ------------
