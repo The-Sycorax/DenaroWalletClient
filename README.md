@@ -38,44 +38,52 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 <dl><dd>
 
 #### `generatewallet`:
+**Overview**: The `generatewallet` sub-command is used to generate new wallet files or overwrite existing ones. 
 <dl><dd>
-
+    
 *Note: `-password` must be set for encrypted and/or deterministic wallets.*
-* `-wallet`: Specify the wallet filename (Required).
-* `-encrypt`: Encrypt the new wallet.
-* `-2fa`: Enables 2-Factor Authentication for the new encrypted wallet.
+* `-wallet`: Specifies the wallet filename (Required).
+* `-encrypt`: Enables encryption for new wallets.
+* `-2fa`: Enables 2-Factor Authentication for new encrypted wallets.
 * `-password`: Password used for wallet encryption and/or deterministic address generation.
-* `-deterministic`: Generates a deterministic wallet.
-* `-backup`: Enables or disables the backup of an existing wallet. Choose either 'True' or 'False'.
-* `-disable-overwrite-warning`: Disables warning when overwriting an existing wallet.
-* `-overwrite-password`: Password to overwrite an existing wallet that is encrypted.
+* `-deterministic`: Enables deterministic address generation for new wallets.
+* `-backup`: Disables wallet backup warning when attempting to overwrite an existing wallet. A 'True' or 'False' parameter is required, and will specify if the wallet should be backed up or not.
+* `-disable-overwrite-warning`: Disables overwrite warning if an existing wallet is not backed up.
+* `-overwrite-password`: Used to bypass the password confirmation prompt when overwriteing a wallet that is encrypted. A string paramter is required, and should specify the password used for the encrypted wallet.
 </dd></dl>
 
+---
+
 #### `generateaddress`:
+**Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used durring decryption to derive the data associated with them.
 <dl><dd>
 
 *Note: `-password` must be set if the wallet specified is encrypted and/or deterministic.*
-* `-wallet`: Specify the wallet filename (Required).
+* `-wallet`: Specifies the wallet filename (Required).
 * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
-* `-password`: The password used for encryption and/or deterministic address generation of the specified wallet.
+* `-password`: Password used for encryption and/or deterministic address generation of the specified wallet.
 </dd></dl>
 
+---
+
 #### `decryptwallet`:
+**Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below).  
 <dl><dd>
 
 *Note: `decryptwallet` will not work if a wallet is unencrypted.*
-* `-wallet`: Specify the wallet filename (Required).
+* `-wallet`: Specifies the wallet filename (Required).
 * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
-* `-password`: The password used for encryption of the specified wallet (Required).
+* `-password`: Password used for decryption of the specified wallet (Required).
 * `-filter`: Filter wallet entries by address and/or field. Add a hyphen (-) to the beginning of an address to exclude it. 
 The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id,mnemonic,private_key,public_key,address}"`.The entire filter string must be enclosed in quotation marks and parameters must be enclosed in curly braces `{}`
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
 
-#### `decryptwallet filter`:
-<dl><dd>
+---
 
-*Note: Using `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. Also this is a positional argument, therefore it should come directly after the other options for `decryptwallet`.*
+#### `decryptwallet filter`:
+**Overview**: `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
+<dl><dd>
 
 * `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. The format is: `filter address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`
 * `-field`: One or more fields to filter by. The format is: `filter field=id,mnemonic,private_key,public_key,address`.
