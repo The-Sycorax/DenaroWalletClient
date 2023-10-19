@@ -147,6 +147,7 @@ mnemonic, private_key, public_key, and address).*
 * *Various filtering combinations can be used.*
 
 #### Filter Examples:
+<details>
 To get an idea of how filtering works, below are a few examples.
 
 *Note: The following addresses are used only for these examples and you should use your own.*
@@ -199,6 +200,8 @@ python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePas
 ```bash
 python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
 ```
+</details>
+
 </details>
 
 ------------
