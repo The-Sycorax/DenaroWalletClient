@@ -97,7 +97,7 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
 *If the wallet specified already exists the user will be prompted with a standard warning and asked if they want to backup the existing wallet. If the user chooses not to back up an existing wallet, then they will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet. A password will be required to overwrite an existing wallet if it is encrypted. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to [generatewallet](#generatewallet) options for details).*
 </dd></dl>
 
-<summary>Examples:</summary>
+<summary>Expand:</summary>
 
 * Generates an un-encrypted, non-deterministic wallet:
     ```bash
@@ -119,7 +119,7 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
 
 ### Address Generation:
 <details>
-<summary>Examples:</summary>
+<summary>Expand:</summary>
 
 * Generates an address for a wallet that is un-encrypted and/or non-deterministic:
     ```bash
@@ -133,7 +133,7 @@ The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id
 
 ### Wallet Decryption:
 <details>
-<summary>Example:</summary>
+<summary>Expand:</summary>
 
 * Decrypts an entire wallet:
     ```bash
