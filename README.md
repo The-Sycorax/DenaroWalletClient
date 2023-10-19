@@ -86,7 +86,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
   
 * `-password`: Password used for decryption of the specified wallet (Required).
   
-* `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen (-) to the beginning of an address will exclude it. The format is:`-filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id,mnemonic,private_key,public_key,address}"`.The entire filter string must be enclosed in quotation marks and parameters must be enclosed in curly braces `{}`
+* `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen (-) to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. The format is: `-filter="address={ADDRESS_1,ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"`.
 
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
@@ -97,9 +97,11 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 **Overview**: `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
 <dl><dd>
 
-* `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. The format is: `filter address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`
+* `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it.
+  * The format is: `-address=ADDRESS_1,ADDRESS_2,...`
   
-* `-field`: One or more fields to filter by. The format is: `filter field=id,mnemonic,private_key,public_key,address`.
+* `-field`: One or more fields to filter by.
+  * The format is: `-field=id,mnemonic,private_key,public_key,address`.
   
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
