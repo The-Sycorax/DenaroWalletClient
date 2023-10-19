@@ -283,7 +283,7 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
 
         totp_qr_data = f'otpauth://totp/{filename}?secret={totp_secret}&issuer=Denaro Wallet Client'
         # Generate a QR code for the TOTP secret
-        qr_img = QRCodeUtils.generate_qr_with_logo(totp_qr_data, "./denaro/wallet/denaro_logo_3.png")
+        qr_img = QRCodeUtils.generate_qr_with_logo(totp_qr_data, "./denaro/wallet/denaro_logo.png")
         # Threading is used to show the QR window to the user while allowing input in the temrinal
         thread = threading.Thread(target=QRCodeUtils.show_qr_with_timer, args=(qr_img, filename, totp_secret,))
         thread.start()
