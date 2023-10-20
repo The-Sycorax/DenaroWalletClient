@@ -62,7 +62,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 ---
 
 #### `generateaddress`:
-**Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used durring decryption to derive the data associated with them.
+**Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (id, mnemonic, private_key, public_key, and address).
 <dl><dd>
 
 *Note: `-password` must be set if the wallet specified is encrypted and/or deterministic.*
@@ -76,7 +76,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 ---
 
 #### `decryptwallet`:
-**Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below).  
+**Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below), and return the data back to the console.  
 <dl><dd>
 
 *Note: `decryptwallet` will not work if a wallet is unencrypted.*
@@ -89,7 +89,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen (-) to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. 
   * The format is: 
     ```bash 
-    -filter="address={ADDRESS_1,ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"
+    -filter="address={ADDRESS_1,-ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"
     ```
 
 * `-pretty`: Print formatted JSON output for better readability.
@@ -104,7 +104,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. 
     * The format is: 
         ```bash
-        -address=ADDRESS_1,-ADDRESS_2,...
+        fliter -address=ADDRESS_1,-ADDRESS_2,...
         ```
   
 * `-field`: One or more fields to filter by. 
