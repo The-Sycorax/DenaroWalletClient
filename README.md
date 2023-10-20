@@ -125,11 +125,10 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 ### Generating New Wallets:
 <details>
 <dl><dd>
-*Note: The wallet filename does not require a .json extension to be added as it is entirely optional. The script will add the extension to the filename by default if not present.*
+<i>Note: The wallet filename does not require a .json extension to be added as this is entirely optional. By default, the script will add the extension to the filename if not present.</i>
 </dd><dd>
 
 *If the wallet specified already exists the user will be prompted with a warning and asked if they want to backup the existing wallet. If the user chooses not to back up an existing wallet, then they will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet. When overwriting an encrypted wallet, the password associated with the it is required, and the user will be prompted to type it in. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to [generatewallet](#generatewallet) options for details).*
-</dd></dl>
 
 <summary>Expand:</summary>
 
