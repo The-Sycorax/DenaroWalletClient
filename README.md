@@ -86,7 +86,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
   
 * `-password`: Password used for decryption of the specified wallet (Required).
   
-* `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen (-) to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. 
+* `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen `-` to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. 
   * The format is: 
     ```bash 
     -filter="address={ADDRESS_1,-ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"
@@ -101,7 +101,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 **Overview**: `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
 <dl><dd>
 
-* `-address`: One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. 
+* `-address`: One or more addresses to filter by. Adding a hyphen `-` to the beginning of an address will exclude it. 
     * The format is: 
         ```bash
         fliter -address=ADDRESS_1,-ADDRESS_2,...
@@ -182,12 +182,12 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 <details>
 <summary>Overview:</summary>
 
-* *To exclude specific addresses from the filtered results a hyphen `-` can be added before the specified address.*
+* *To exclude specific addresses from the filtered data a hyphen `-` can be added before the specified address.*
 * *One or more addresses can be specified.*
 * *Addresses will only be filtered if they are apart of the wallet that is being decrypted.*
-* *If one or more fields are not specified then all fields are included in the filtered results (id, 
+* *If one or more fields are not specified, then all fields are included in the filtered data (id, 
 mnemonic, private_key, public_key, and address).*
-* *When it comes to filtering wallet entries, there is no difference if the `-filter` option is used over of the `filter` positional argument et vice versa. The results will be always be the same.*
+* *When it comes to filtering wallet entries, there is no difference if the `-filter` option is used over of the `filter` positional argument et vice versa. The returned data will be always be the same.*
 * *Various filtering combinations can be used.*
 </details>
 <details>
