@@ -355,11 +355,13 @@ class UserPrompts:
         while True:
             # If password is not provided or not being set from CLI
             if not from_cli and not password or from_cli and not password:
+                print()
                 # Prompt for password
                 password_input = getpass.getpass("Enter wallet password: ")
                 # Prompt for password confirmation
                 password_confirm = getpass.getpass("Confirm password: ")
             else:
+                print()
                 # Use the provided password or prompt for it
                 password_input = password or getpass.getpass("Enter wallet password: ")
                 password_confirm = password_input
@@ -478,7 +480,7 @@ class UserPrompts:
             sys.exit(1)  
 
     @staticmethod
-    def backup_and_overwrite_helper(data, filename, password, encrypt,backup,disable_warning,from_cli):
+    def backup_and_overwrite_helper(data, filename, password, encrypt, backup, disable_warning, from_cli, deterministic):
         """
         Overview:
         Handles the logic for backing up and overwriting wallet data.
@@ -495,6 +497,10 @@ class UserPrompts:
         Returns:
         - bool: True if successful, False or None otherwise.
         """
+        # Initialize verification variables
+        password_verified = False
+        hmac_verified = False
+
         # Convert CLI boolean values to 'y' or 'n'
         if from_cli:
             if backup == "True":
@@ -512,9 +518,8 @@ class UserPrompts:
                 # Create the backup
                 shutil.copy(filename, backup_path)
                 print(f"Backup created at {backup_path}\n")
-                result = True
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
-                return result
+                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                return True
 
             except Exception as e:
                 logging.error(f" Could not create backup: {e}\n")
@@ -528,36 +533,77 @@ class UserPrompts:
                     if backup == "n":
                         print("Wallet not backed up.")
                     print("Overwrite warning disabled.")
-                if password:
-                    print("Password already provided for existing wallet.")
-                # If the wallet is encrypted ask the user for it's password
-                if encrypt:
-                    password_input = UserPrompts.get_password(password=password if password else None,from_cli=True)
-                    # Verify the provided password against the stored verifier
-                    if not VerificationUtils.verify_password(base64.b64decode(data["wallet_data"]["verifier"].encode('utf-8')), password_input, base64.b64decode(data["wallet_data"]["verification_salt"])):
+
+                if password and encrypt:
+                    print("Overwrite password provided.")
+
+                    # Verify the password and HMAC to prevent brute force
+                    password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                    
+                    # Based on password verification, update or reset the number of failed attempts
+                    data = DataManipulation.update_or_reset_attempts(data, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                    DataManipulation._save_data(filename,data)
+                    
+                    # Check if there is still wallet data verify the password and HMAC again
+                    if data:
+                        password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                    # Handle error if the password and HMAC verification failed
+                    if not (password_verified and hmac_verified):
                         logging.error("Authentication failed or wallet data is corrupted.")
+
+                # If the wallet is encrypted and the password and hmac have not yet been varified then enter while loop
+                if encrypt and not (password_verified and hmac_verified) and data:
+                    while True:
+                        # Prompt user for password
+                        password_input = UserPrompts.get_password(password=password if password and (password_verified and hmac_verified) else None,from_cli=True)
+                        # Verify the password and HMAC
+                        password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+    
+                        # Based on password verification, update or reset the number of failed attempts
+                        data = DataManipulation.update_or_reset_attempts(data, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                        DataManipulation._save_data(filename,data)
+                        
+                        # If wallet data has not erased yet verify the password and HMAC again
+                        if data:
+                            password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                        
+                        # Handle error if the password and HMAC verification failed
+                        if data and not (password_verified and hmac_verified):
+                            logging.error("Authentication failed or wallet data is corrupted.")
+                       
+                        # Handle error if wallet data was erased then continue
+                        elif not data:
+                            logging.error("Authentication failed or wallet data is corrupted.")
+                            break                        
+                        # If the password and HMAC verification passed then continue
+                        else:
+                            break
+
+                # Check data was not erased due to failed password attempts 
+                if data:
+                    print()
+                    # Call wait_for_input and allow up to 5 seconds for the user to cancel overwrite operation
+                    if not UserPrompts.wait_for_input(timeout=5):
                         DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                         return
-                print()
-                # Call wait_for_input and allow up to 5 seconds for the user to cancel overwrite operation
-                if not UserPrompts.wait_for_input(timeout=5):
-                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
-                    return
-                # If no input is recieved within 5 seconds then continue
+                    # If no input is recieved within 5 seconds then continue
+                    else:
+                        print()
+                        try:
+                            # Overwrite wallet with empty data
+                            with open(filename, 'w') as file:
+                                file.write("")
+                                print("\nWallet data permanetly erased.")
+                        except Exception as e:
+                            logging.error(f" Could not write to file: {e}")
+                            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                            return
+                        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                        return True
                 else:
                     print()
-                    try:
-                        # Overwrite wallet with empty data
-                        with open(filename, 'w') as file:
-                            file.write("")
-                            print("\nWallet data erased.")
-                    except Exception as e:
-                        logging.error(f" Could not write to file: {e}")
-                        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
-                        return
-                    result = True
-                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
-                    return result
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                    return True
             else:
                 DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return
@@ -585,9 +631,8 @@ class UserPrompts:
                 # Exit if the user chooses to quit
                 if totp_code.lower() == '/q':
                     logging.info("User exited before providing a valid Two-Factor Authentication code.\n")
-                    result = False
-                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
-                    return result
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                    return False
                 # Check if the totp_code is provided
                 if not totp_code:
                     logging.error("No Two-Factor Authentication code provided. Please enter a valid Two-Factor Authentication code.\n")

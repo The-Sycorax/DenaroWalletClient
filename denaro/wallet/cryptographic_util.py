@@ -9,6 +9,7 @@ from Crypto.Protocol.KDF import scrypt
 import hmac as hmac_module
 import pyotp
 import ctypes
+import json
 
 # Global variables
 FAILED_ATTEMPTS = 0
@@ -105,6 +106,64 @@ class DataManipulation:
             data[i] = scrambled_data[j]
         DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not data])
         return data
+
+    @staticmethod
+    def update_or_reset_attempts(data, hmac_salt, password_verified, deterministic):
+        """
+        Updates or resets failed login attempts based on whether the password was verified.
+        
+        Arguments:
+        - data: The wallet data
+        - hmac_salt: The HMAC salt
+        - password_verified: Boolean indicating if the password is verified
+        - filename: The name of the wallet file
+        - deterministic: Boolean indicating if the wallet is deterministic
+        """
+        # Determine the appropriate function to update or reset attempts
+        update_or_reset = CryptoWallet.update_failed_attempts if not password_verified else CryptoWallet.reset_failed_attempts
+    
+        # Define keys to update or reset based on deterministic flag
+        key_list = [["entry_data", "entries"]]
+        if deterministic:
+            key_list.append(["entry_data", "key_data"])
+        key_list.append(["totp_secret"])
+    
+        # Update or reset the attempts for each key in the wallet data
+        for key in key_list:
+            # Initialize target_data as the root dictionary
+            target_data = data["wallet_data"]
+            for k in key:
+                # Navigate through nested keys
+                target_data = target_data.get(k, {})
+            
+            # Convert to list if target_data is not a list
+            if not isinstance(target_data, list):
+                target_data = [target_data]
+            
+            # Convert each entry to string
+            target_data = [str(entry) for entry in target_data]
+            
+            # Update or reset attempts
+            updated_data, attempts_left = update_or_reset(target_data, hmac_salt)
+            
+            # Save the updated data back into the original data structure
+            if len(key) == 1:
+                data["wallet_data"][key[0]] = updated_data
+            else:
+                data["wallet_data"][key[0]][key[1]] = updated_data
+        
+        data["wallet_data"]["totp_secret"] = data["wallet_data"]["totp_secret"][0]
+    
+        if attempts_left:
+            print(f"\nPassword Attempts Left: {attempts_left}")
+        if attempts_left == 0:
+            print(f"\nPassword Attempts Left: {attempts_left}")
+            print("Wallet data permanetly erased...")
+            data = None
+        
+        # Securely delete sensitive variables
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not data])
+        return data
     
     @staticmethod    
     def secure_cleanup(variables):
@@ -124,6 +183,7 @@ class DataManipulation:
         # Explicitly invoke the garbage collector
         gc.collect()
 
+    @staticmethod
     def secure_delete(var):
         """Overview:
             In environments where security is paramount, simply deleting a variable might not be enough due to the way 
@@ -165,6 +225,23 @@ class DataManipulation:
             del var
             # Call the garbage collector to remove any lingering data
             gc.collect()
+    
+    @staticmethod
+    def _save_data(filename, data):
+        """
+        Persistently stores wallet data to a specified file.
+        """
+        try:
+            with open(filename, 'w') as f:
+                if data:
+                    json.dump(data, f, indent=4)
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                else: 
+                    f = data
+                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+        except Exception as e:
+            logging.error(f"Error saving data to file: {str(e)}")
+            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
 
 class VerificationUtils:
     
@@ -214,6 +291,33 @@ class VerificationUtils:
         else:
             DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not computed_hmac])
             return computed_hmac
+
+    @staticmethod
+    def verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic):
+        """
+        Verifies the given password and HMAC.
+        
+        Arguments:
+        - data: The wallet data
+        - password: The user's password
+        - hmac_salt: The HMAC salt
+        
+        Returns:
+        - A tuple of booleans indicating if the password and HMAC are verified
+        """
+        # Decode and verify the stored password verifier
+        stored_verifier = base64.b64decode(data["wallet_data"]["verifier"].encode('utf-8'))
+        password_verified, _ = VerificationUtils.verify_password(stored_verifier, password, verification_salt)
+        
+        # Prepare and verify the HMAC message
+        hmac_msg = json.dumps(data["wallet_data"]["entry_data"]["entries"]).encode()
+        if deterministic:
+            hmac_msg += json.dumps(data["wallet_data"]["entry_data"]["key_data"]).encode()
+        stored_hmac = base64.b64decode(data["wallet_data"]["hmac"].encode('utf-8'))
+        hmac_verified = VerificationUtils.hmac_util(password=password, hmac_salt=hmac_salt, stored_hmac=stored_hmac, hmac_msg=hmac_msg, verify=True)
+        result = password_verified, hmac_verified, stored_verifier
+        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        return result
     
     @staticmethod
     def verify_totp_secret(password,totp_secret,hmac_salt,verification_salt,stored_verifier):

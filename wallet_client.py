@@ -129,22 +129,6 @@ def _load_data(filename, new_wallet):
             logging.error(f"Error reading the wallet file or parsing its content: {str(e)}")
             return None, False
         #    raise
-
-def _save_data(filename, data):
-    """
-    Persistently stores wallet data to a specified file.
-    """
-    try:
-        with open(filename, 'w') as f:
-            if data:
-                json.dump(data, f, indent=4)
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
-            else: 
-                f = data
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
-    except Exception as e:
-        logging.error(f"Error saving data to file: {str(e)}")
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
  
 # Wallet Helper Functions
 def generate_encrypted_wallet_data(wallet_data, current_data, password, totp_secret, hmac_salt, verification_salt, stored_verifier):
@@ -311,89 +295,6 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
     DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
     return result
 
-def verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic):
-    """
-    Verifies the given password and HMAC.
-    
-    Arguments:
-    - data: The wallet data
-    - password: The user's password
-    - hmac_salt: The HMAC salt
-    
-    Returns:
-    - A tuple of booleans indicating if the password and HMAC are verified
-    """
-    # Decode and verify the stored password verifier
-    stored_verifier = base64.b64decode(data["wallet_data"]["verifier"].encode('utf-8'))
-    password_verified, _ = VerificationUtils.verify_password(stored_verifier, password, verification_salt)
-    
-    # Prepare and verify the HMAC message
-    hmac_msg = json.dumps(data["wallet_data"]["entry_data"]["entries"]).encode()
-    if deterministic:
-        hmac_msg += json.dumps(data["wallet_data"]["entry_data"]["key_data"]).encode()
-    stored_hmac = base64.b64decode(data["wallet_data"]["hmac"].encode('utf-8'))
-    hmac_verified = VerificationUtils.hmac_util(password=password, hmac_salt=hmac_salt, stored_hmac=stored_hmac, hmac_msg=hmac_msg, verify=True)
-    result = password_verified, hmac_verified, stored_verifier
-    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
-    return result
-
-def update_or_reset_attempts(data, hmac_salt, password_verified, filename, deterministic):
-    """
-    Updates or resets failed login attempts based on whether the password was verified.
-    
-    Arguments:
-    - data: The wallet data
-    - hmac_salt: The HMAC salt
-    - password_verified: Boolean indicating if the password is verified
-    - filename: The name of the wallet file
-    - deterministic: Boolean indicating if the wallet is deterministic
-    """
-    # Determine the appropriate function to update or reset attempts
-    update_or_reset = CryptoWallet.update_failed_attempts if not password_verified else CryptoWallet.reset_failed_attempts
-
-    # Define keys to update or reset based on deterministic flag
-    key_list = [["entry_data", "entries"]]
-    if deterministic:
-        key_list.append(["entry_data", "key_data"])
-    key_list.append(["totp_secret"])
-
-    # Update or reset the attempts for each key in the wallet data
-    for key in key_list:
-        # Initialize target_data as the root dictionary
-        target_data = data["wallet_data"]
-        for k in key:
-            # Navigate through nested keys
-            target_data = target_data.get(k, {})
-        
-        # Convert to list if target_data is not a list
-        if not isinstance(target_data, list):
-            target_data = [target_data]
-        
-        # Convert each entry to string
-        target_data = [str(entry) for entry in target_data]
-        
-        # Update or reset attempts
-        updated_data, attempts_left = update_or_reset(target_data, hmac_salt)
-        
-        # Save the updated data back into the original data structure
-        if len(key) == 1:
-            data["wallet_data"][key[0]] = updated_data
-        else:
-            data["wallet_data"][key[0]][key[1]] = updated_data
-    
-    data["wallet_data"]["totp_secret"] = data["wallet_data"]["totp_secret"][0]
-
-    if attempts_left:
-        print(f"\nPassword Attempts Left: {attempts_left}")
-    if attempts_left == 0:
-        print(f"\nPassword Attempts Left: {attempts_left}")
-        print("Wallet data permanetly erased...\n")
-        data = None
-    # Save the updated wallet data
-    _save_data(filename, data)
-    # Securely delete sensitive variables
-    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
-
 def handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic):
     """
     Handles various operations for an existing encrypted wallet.
@@ -419,13 +320,14 @@ def handle_existing_encrypted_wallet(filename, data, password, totp_code, determ
     hmac_salt = base64.b64decode(data["wallet_data"]["hmac_salt"])
 
     # Verify the password and HMAC
-    password_verified, hmac_verified, stored_verifier = verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
+    password_verified, hmac_verified, stored_verifier = VerificationUtils.verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
 
     # Based on password verification, update or reset the number of failed attempts
-    update_or_reset_attempts(data, hmac_salt, password_verified, filename,deterministic)
+    data = DataManipulation.update_or_reset_attempts(data, hmac_salt, password_verified, deterministic)
+    DataManipulation._save_data(filename,data)
 
     # Verify the password and HMAC
-    password_verified, hmac_verified, stored_verifier = verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
+    password_verified, hmac_verified, stored_verifier = VerificationUtils.verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
 
     # Fail if either the password or HMAC verification failed
     if not (password_verified and hmac_verified):
@@ -573,6 +475,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     
     if new_wallet:
         stored_encrypt_param = encrypt
+        stored_deterministic_param = deterministic
 
     # Determine encryption status and wallet type for an existing wallet
     if wallet_exists or not new_wallet:
@@ -594,13 +497,13 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     
     #Handle backup and overwrite for an existing wallet
     if new_wallet and wallet_exists:
-        if not UserPrompts.backup_and_overwrite_helper(data,filename,overwrite_password,encrypt,backup,disable_warning,from_cli):
+        if not UserPrompts.backup_and_overwrite_helper(data, filename, overwrite_password, encrypt, backup, disable_warning, from_cli, deterministic):
             DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
             return
         
     if new_wallet:
         encrypt = stored_encrypt_param    
-
+        deterministic = stored_deterministic_param
     # Handle different scenarios based on whether the wallet is encrypted
     if encrypt:        
         if new_wallet:
@@ -620,7 +523,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             # Handle operations on an existing encrypted wallet
             hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
             if not hmac_salt or not verification_salt or not stored_verifier:
-                logging.error(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+                #logging.error(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
                 DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
                 return None
 
@@ -720,7 +623,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         data["wallet_data"]["entry_data"]["entries"].append(unencrypted_data_entry)
 
     # Save the updated wallet data back to the file
-    _save_data(filename, data)
+    DataManipulation._save_data(filename, data)
     # Extract the newly generated address to be returned
     result = wallet_data['address']
     DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
