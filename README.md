@@ -14,10 +14,14 @@ sudo apt update
 sudo apt install libgmp-dev
 
 # Setting Up a Python Virtual Environment (optional but recommended)
-# Install virtualenv with pip; if pip installation fails apt is used
-pip install virtualenv || sudo apt install python3-venv
-# Create and activate the virtual environment
-python3 -m venv env && source env/bin/activate 
+# Install virtualenv with pip
+pip install virtualenv
+# Sometimes virtualenv requires the apt package to be installed
+sudo apt install python3-venv
+# Create the virtual environment
+python3 -m venv env
+# Activate the virtual environment
+source env/bin/activate
 
 # Install the required packages
 pip3 install -r requirements.txt
