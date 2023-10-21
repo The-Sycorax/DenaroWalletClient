@@ -475,7 +475,7 @@ class UserPrompts:
         # Handle exit on keyboard interrupt
         except KeyboardInterrupt:
             print(f"\rExisting wallet data will be erased in {time_remaining} seconds. Press any key to cancel operation...    ")
-            print('Operation canceled. Process terminated by user.\n')
+            print('Operation canceled. Process terminated by user.')
             stop_event.set()
             sys.exit(1)  
 

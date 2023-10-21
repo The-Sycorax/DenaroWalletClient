@@ -415,7 +415,6 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
     DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
     return result
 
-
 # Wallet Orchestrator Functions
 def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None,from_cli=False):
     """Overview:
@@ -494,6 +493,9 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         # Check if the existing wallet type is deterministic
         if "wallet_type" in data["wallet_data"] and not new_wallet:
             deterministic = data["wallet_data"]["wallet_type"] == "deterministic"
+        if len(data["wallet_data"]["entry_data"]["entries"]) > 255 and not new_wallet:
+            logging.info("Cannot proceed. Max wallet entries reached.")
+            return None
     
     #Handle backup and overwrite for an existing wallet
     if new_wallet and wallet_exists:
@@ -665,8 +667,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
         
         The latter stages of the function provides options to filter and format entry data based on the given arguments.
         Entry data can be filtered by specific addresses or specific field names and then formatted according to the 
-        `pretty` flag, yielding either a prettified JSON string or a dictionary. Details related to these specific arguments
-        are provided in the main function.
+        `pretty` flag, yielding either a prettified JSON string or a dictionary.
         
         Args:
         - filename (str): The path to the file that contains the encrypted wallet data.
@@ -1189,8 +1190,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\r\n  ")
-        print("\rProcess terminated by user.\n")
+        print("\r  ")
+        print("\rProcess terminated by user.")
         QRCodeUtils.close_qr_window(True)
         DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
         sys.exit(1)
