@@ -1,5 +1,4 @@
 import os
-import gc
 import logging
 import base64
 import hashlib
@@ -25,7 +24,7 @@ class EncryptionUtils:
         cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
         ciphertext, tag = cipher.encrypt_and_digest(data)
         result = ciphertext, tag
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
     @staticmethod
@@ -39,7 +38,7 @@ class EncryptionUtils:
         cipher = ChaCha20_Poly1305.new(key=key)
         ciphertext, tag = cipher.encrypt_and_digest(data)
         result = cipher.nonce, ciphertext, tag
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
     @staticmethod
@@ -51,11 +50,11 @@ class EncryptionUtils:
         decrypted_data = cipher.decrypt(ciphertext)
         try:
             cipher.verify(tag)
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not decrypted_data])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not decrypted_data])
             return decrypted_data
         except ValueError:
             logging.error("ChaCha20-Poly1305 tag verification failed. Data might be corrupted or tampered with.")
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             raise ValueError("ChaCha20-Poly1305 tag verification failed. Data might be corrupted or tampered with.")
 
 class ProofOfWork:
@@ -68,13 +67,13 @@ class ProofOfWork:
         target = "1" * DIFFICULTY
         while not hashlib.sha256(challenge + str(proof).encode()).hexdigest().startswith(target):
             proof += 1
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not proof])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not proof])
         return proof
 
     @staticmethod
     def is_proof_valid(proof, challenge):
         result = hashlib.sha256(challenge + str(proof).encode()).hexdigest().startswith("1" * DIFFICULTY)
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
 class DataManipulation:
@@ -91,7 +90,7 @@ class DataManipulation:
         scrambled_data = bytearray(len(data))
         for i, j in enumerate(indices):
             scrambled_data[j] = data[i]
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not scrambled_data])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not scrambled_data])
         return scrambled_data
 
     @staticmethod
@@ -104,7 +103,7 @@ class DataManipulation:
         data = bytearray(len(scrambled_data))
         for i, j in enumerate(indices):
             data[i] = scrambled_data[j]
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not data])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not data])
         return data
 
     @staticmethod
@@ -162,35 +161,15 @@ class DataManipulation:
             data = None
         
         # Securely delete sensitive variables
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not data])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not data])
         return data
     
-    @staticmethod    
-    def secure_cleanup(variables):
-        """Overview:
-            The `secure_cleanup` function is a dedicated utility to enhance security by ensuring that sensitive variables
-            are not only deleted but also purged from memory. By leveraging both the `secure_delete` function and Python's
-            garbage collection, it aims to minimize potential risks associated with lingering sensitive data in memory.
-            
-            Arguments:
-            - var (various types): The variable which needs to be securely deleted and its memory overwritten.
-            
-            Returns:
-            - None: The function operates in-place, directly modifying memory without returning values.
-        """
-        # Call the secure_delete function to wipe variables from memory
-        DataManipulation.secure_delete(variables)
-        # Explicitly invoke the garbage collector
-        gc.collect()
-
     @staticmethod
     def secure_delete(var):
         """Overview:
-            In environments where security is paramount, simply deleting a variable might not be enough due to the way 
-            memory management in Python works. This function aims to securely delete a variable by overwriting its memory 
-            footprint with zeros, thus ensuring that sensitive data does not linger in memory. By employing both native Python 
-            techniques and lower-level memory operations, it ensures that sensitive data remnants are minimized, reducing 
-            exposure to potential threats.
+            This function aims to securely delete a variable by overwriting its memory footprint with zeros, thus ensuring
+            that sensitive data does not linger in memory. By employing both native Python techniques and lower-level memory
+            operations, it ensures that sensitive data remnants are minimized, reducing exposure to potential threats.
             
             Arguments:
             - var (various types): The variable which needs to be securely deleted and its memory overwritten.
@@ -210,21 +189,22 @@ class DataManipulation:
         except TypeError:
             # Handle different types of variables
             if isinstance(var, (str, bytes)):
+                # For immutable types, reassigning is the only way, but it's not 100% secure
                 var = '0' * len(var)
-            elif isinstance(var, (list, tuple)):
+            elif isinstance(var, list):
+                # For lists, we can zero out each element
                 for i in range(len(var)):
-                    var[i] = None
+                    var[i] = 0
             elif isinstance(var, dict):
+                # For dictionaries, set each value to zero
                 for key in var:
-                    var[key] = None
+                    var[key] = 0
             else:
-                # For other unsupported types, just reassign to None
-                var = None
+                # For other unsupported types, just reassign to zero
+                var = 0
         finally:
             # Explicitly delete the variable reference
             del var
-            # Call the garbage collector to remove any lingering data
-            gc.collect()
     
     @staticmethod
     def _save_data(filename, data):
@@ -235,13 +215,13 @@ class DataManipulation:
             with open(filename, 'w') as f:
                 if data:
                     json.dump(data, f, indent=4)
-                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 else: 
                     f = data
-                    DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         except Exception as e:
             logging.error(f"Error saving data to file: {str(e)}")
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
 
 class VerificationUtils:
     
@@ -254,7 +234,7 @@ class VerificationUtils:
         pbkdf2_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
         # Second layer of hashing using Scrypt
         result = scrypt(pbkdf2_hash, salt=salt, key_len=32, N=2**14, r=8, p=1)
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
     @staticmethod
@@ -271,7 +251,7 @@ class VerificationUtils:
         if not is_verified:
             verifier = None
         result = is_verified, verifier
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
     
     @staticmethod
@@ -286,10 +266,10 @@ class VerificationUtils:
         # If in verify mode, securely compare the computed HMAC with the stored HMAC
         if verify:
             result = hmac_module.compare_digest(computed_hmac, stored_hmac)
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
             return result
         else:
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not computed_hmac])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not computed_hmac])
             return computed_hmac
 
     @staticmethod
@@ -316,7 +296,7 @@ class VerificationUtils:
         stored_hmac = base64.b64decode(data["wallet_data"]["hmac"].encode('utf-8'))
         hmac_verified = VerificationUtils.hmac_util(password=password, hmac_salt=hmac_salt, stored_hmac=stored_hmac, hmac_msg=hmac_msg, verify=True)
         result = password_verified, hmac_verified, stored_verifier
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
     
     @staticmethod
@@ -331,11 +311,11 @@ class VerificationUtils:
         # If the decrypted TOTP doesn't match the predictable one, handle 2FA validation
         if decrypted_totp_secret != predictable_totp_secret:
             result = decrypted_totp_secret, True
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
             return result
         else:
             result = "", False
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
             return result
 
     @staticmethod
@@ -345,7 +325,7 @@ class VerificationUtils:
         """
         totp = pyotp.TOTP(secret)
         result = totp.verify(code)
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
 class TOTP_Utils:
@@ -357,11 +337,11 @@ class TOTP_Utils:
         """
         if not predictable:
             result = pyotp.random_base32()
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
             return result
         else:
             result = hashlib.sha256(verification_salt).hexdigest()[:16]
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
             return result
     
     @staticmethod
@@ -371,7 +351,7 @@ class TOTP_Utils:
         """
         totp = pyotp.TOTP(secret)
         result = totp.now()
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
 
 class CryptoWallet:
@@ -382,7 +362,7 @@ class CryptoWallet:
         # Verify the provided password against the stored hash and salt
         password_verified, verifier = VerificationUtils.verify_password(stored_password_hash, password, verification_salt)
         if not password_verified and not verifier:
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             logging.error("Authentication failed or wallet data is corrupted.")
             raise ValueError("Authentication failed or wallet data is corrupted.")
         
@@ -459,7 +439,7 @@ class CryptoWallet:
 
         # 4. Cleanup and return
         # Securely delete sensitive variables
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
                 
         return result
 
@@ -475,7 +455,7 @@ class CryptoWallet:
         # Verify the provided password against the stored hash and salt
         password_verified, verifier = VerificationUtils.verify_password(stored_password_hash, password, verification_salt)
         if not password_verified and not verifier:
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             logging.error("Authentication failed or wallet data is corrupted.")
             raise ValueError("Authentication failed or wallet data is corrupted.")
         else:
@@ -499,10 +479,10 @@ class CryptoWallet:
             FAILED_ATTEMPTS += 1
             if FAILED_ATTEMPTS >= MAX_ATTEMPTS:
                 #del encrypted_data  # Replace with your secure delete function
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 raise ValueError("Too many failed attempts. Data deleted.")
             DIFFICULTY += 1
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             raise ValueError("Invalid ChaCha Challenge proof. Try again.")
         
         # Scramble the challenge based on the proof-of-work
@@ -514,11 +494,11 @@ class CryptoWallet:
         if not ProofOfWork.is_proof_valid(chacha_proof, scrambled_chacha_challenge_portion):
             FAILED_ATTEMPTS += 1
             if FAILED_ATTEMPTS >= MAX_ATTEMPTS:
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 #del encrypted_data  # Replace with your secure delete function
                 raise ValueError("Too many failed attempts. Data deleted.")
             DIFFICULTY += 1
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             raise ValueError("Invalid ChaCha proof. Try again.")
         
         # Compute commitment and convert it to hex
@@ -529,7 +509,7 @@ class CryptoWallet:
 
         # Verify HMAC for ChaCha layer data
         if not VerificationUtils.hmac_util(password=chacha_commitment_hex,hmac_salt=scrambled_parameters[3],stored_hmac=stored_chacha_hmac,hmac_msg=chacha_nonce + scrambled_chacha_ct_bytes + scrambled_chacha_tag,verify=True):
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             logging.error("ChaCha layer data integrity check failed. Wallet data might be corrupted or tampered with.")
             raise ValueError("ChaCha layer data integrity check failed. Wallet data might be corrupted or tampered with.")
                 
@@ -559,11 +539,11 @@ class CryptoWallet:
         if not ProofOfWork.is_proof_valid(aes_challenge_portion_proof, aes_challenge_portion):
             FAILED_ATTEMPTS += 1
             if FAILED_ATTEMPTS >= MAX_ATTEMPTS:
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 #del encrypted_data  # Replace with your secure delete function
                 raise ValueError("Too many failed attempts. Data deleted.")
             DIFFICULTY += 1
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             raise ValueError("Invalid AES Challenge proof. Try again.")
         
         # Scramble the AES challenge based on the proof-of-work
@@ -575,11 +555,11 @@ class CryptoWallet:
         if not ProofOfWork.is_proof_valid(aes_proof, scrambled_aes_challenge_portion):
             FAILED_ATTEMPTS += 1
             if FAILED_ATTEMPTS >= MAX_ATTEMPTS:
-                DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 #del encrypted_data  # Replace with your secure delete function
                 raise ValueError("Too many failed attempts. Data deleted.")
             DIFFICULTY += 1
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             raise ValueError("Invalid AES proof. Try again.")
         
         # Compute commitment and convert it to hex
@@ -590,7 +570,7 @@ class CryptoWallet:
         
         # Verify HMAC for AES layer data
         if not VerificationUtils.hmac_util(password=scrambled_parameters[0].decode(),hmac_salt=scrambled_parameters[3],stored_hmac=stored_aes_hmac,hmac_msg=aes_nonce + scrambled_aes_ct_bytes + scrambled_aes_tag,verify=True):
-            DataManipulation.secure_cleanup([var for var in locals().values() if var is not None])
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             logging.error("AES layer data integrity check failed. Wallet data might be corrupted or tampered with.")
             raise ValueError("AES layer data integrity check failed. Wallet data might be corrupted or tampered with.")
         
@@ -610,7 +590,7 @@ class CryptoWallet:
         result = decrypted_data.decode('utf-8')
                                                      
         # 5. Cleanup and return
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result      
     
     @staticmethod
@@ -648,7 +628,7 @@ class CryptoWallet:
             updated_data.append(updated_encrypted_data_base64)
             encrypted_data = updated_data
         result = encrypted_data, attempts_left
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
     
     @staticmethod
@@ -684,5 +664,5 @@ class CryptoWallet:
             updated_data.append(updated_encrypted_data_base64)
             encrypted_data = updated_data
         result = encrypted_data, None
-        DataManipulation.secure_cleanup([var for var in locals().values() if var is not None and var is not result])
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
         return result
