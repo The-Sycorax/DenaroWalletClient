@@ -498,6 +498,8 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     
     #Handle backup and overwrite for an existing wallet
     if new_wallet and wallet_exists:
+        if "wallet_type" in data["wallet_data"]:
+            deterministic = data["wallet_data"]["wallet_type"] == "deterministic"
         if not UserPrompts.backup_and_overwrite_helper(data, filename, overwrite_password, encrypt, backup, disable_warning, from_cli, deterministic):
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return
