@@ -1189,6 +1189,7 @@ def main():
     sys.exit(0)
 
 if __name__ == "__main__":
+    exit_code = 1
     try:
         if repo.check_for_updates():
             exit_code = 1
