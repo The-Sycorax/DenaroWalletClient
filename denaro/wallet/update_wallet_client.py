@@ -302,7 +302,7 @@ class Repository:
         - tuple: A tuple containing two boolean values. The first boolean indicates whether to update, and the second indicates whether to create a backup.
         """
         # Indicate that an update is available
-        print("An Update is Available\n")
+        print("An Update is Available.\n")
         while True:
             # Ask the user if they want to update walet client
             prompt_for_update = input("Would you like to update the wallet client? (y/n): ")
@@ -311,7 +311,6 @@ class Repository:
                     # Ask the user if they want to backup their current verison of wallet client
                     prompt_for_backup = input("Would you like to backup your current version? (y/n): ")
                     if prompt_for_backup.lower() == 'y': 
-                        print()
                          # Return flags for update and backup
                         return True, True
                     # Check if the user declines to backup
