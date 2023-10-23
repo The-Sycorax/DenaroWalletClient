@@ -128,7 +128,7 @@ class Repository:
         return updated
 
     def prompt_for_update():
-        print("An Update is Available")            
+        print("An Update is Available\n")            
         while True:
             prompt_for_update = input("Would you like to update the wallet client? (y/n): ")
             if prompt_for_update.lower() == 'y':
@@ -150,13 +150,13 @@ class Repository:
     
     def check_for_updates(self, timeout=5):
         if "sha" not in self.saved_data:
-            print("Update may be availible for wallet client. Checking files...")
+            print("Update may be availible for wallet client. Checking...")
             if Repository.auto_update(self):
                 return True
             else: 
                 return False
         elif self.get_head_sha(timeout) != self.saved_data['sha']:
-            print("Update may be availible for wallet client. Checking files...")
+            print("Update may be availible for wallet client. Checking...")
             if Repository.auto_update(self):
                 return True
             else: 
