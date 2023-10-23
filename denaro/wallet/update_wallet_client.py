@@ -150,17 +150,16 @@ class Repository:
     
     def check_for_updates(self, timeout=5):
         if "sha" not in self.saved_data:
+            print("Update may be availible for wallet client. Checking files...")
             if Repository.auto_update(self):
                 return True
             else: 
                 return False
         elif self.get_head_sha(timeout) != self.saved_data['sha']:
+            print("Update may be availible for wallet client. Checking files...")
             if Repository.auto_update(self):
                 return True
             else: 
                 return False
         else:
-            if Repository.auto_update(self):
-                return True
-            else: 
-                return False
+            return False
