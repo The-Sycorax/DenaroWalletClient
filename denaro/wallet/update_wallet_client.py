@@ -117,14 +117,16 @@ class Repository:
                 self.download_files(to_download, max_download_size)
                 print("\nFinished updating")
                 print("Please run wallet client again.")
+                self.saved_data['sha'] = tree_data['sha']
+                self.data_file.write_text(json.dumps(self.saved_data))
                 updated = True
             else:
                 updated = False              
         else:
             print("Wallet client is up to date")
-            updated = False
-        self.saved_data['sha'] = tree_data['sha']
-        self.data_file.write_text(json.dumps(self.saved_data))            
+            self.saved_data['sha'] = tree_data['sha']
+            self.data_file.write_text(json.dumps(self.saved_data))
+            updated = False            
         return updated
 
     def prompt_for_update():
