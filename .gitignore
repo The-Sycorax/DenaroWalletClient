@@ -4,3 +4,5 @@ env
 denaro/wallet/wallets
 wallets
 testing.sh
+old_versions
+github_data.json

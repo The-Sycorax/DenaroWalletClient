@@ -20,6 +20,8 @@ sys.path.insert(0, dir_path + "/denaro/wallet")
 from denaro.key_generation import generate
 from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils, DataManipulation
 from denaro.wallet.interface_util import QRCodeUtils, UserPrompts
+from denaro.wallet.update_wallet_client import Repository
+repo = Repository(repo_owner="The-Sycorax", repo_name="DenaroWalletClient", branch="main", local_dir=".")
 
 is_windows = os.name == 'nt'
 
@@ -1184,10 +1186,37 @@ def main():
             print(f'\nWallet Data:\n"{decrypted_data}"')
     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
     gc.collect()
+    sys.exit(1)
 
 if __name__ == "__main__":
     try:
-        main()
+        if repo.check_for_updates():
+            print("An Update is Available")            
+            while True:
+                prompt_for_update = input("Would you like to update the wallet client? (y/n): ")
+                if prompt_for_update.lower() == 'y':
+                    while True:
+                        prompt_for_backup = input("Would you like to backup your current version? (y/n): ")
+                        if prompt_for_backup.lower() == 'y':
+                            repo.auto_update(backup=True)
+                            print("Please run wallet client again.")
+                            break  # Break out of the inner while loop
+                        elif prompt_for_backup.lower() == 'n':
+                            repo.auto_update()
+                            print("Please run wallet client again.")
+                            break  # Break out of the inner while loop
+                        else:
+                            print("Invalid choice. Please enter 'y' or 'n'.")
+                            print()
+                    break  # Break out of the outer while loop
+                elif prompt_for_update.lower() == 'n':
+                    print()
+                    main()
+                else:
+                    print("Invalid choice. Please enter 'y' or 'n'.")
+                    print()
+        else:
+            main()
     except KeyboardInterrupt:
         print("\r  ")
         print("\rProcess terminated by user.")
