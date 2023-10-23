@@ -99,9 +99,7 @@ class Repository:
             data = data.read_bytes()
         return sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
 
-    def auto_update(self, max_download_size=float('inf'),backup=False):
-        if backup:
-            self.backup_local_files()
+    def auto_update(self, max_download_size=float('inf')):
         tree_data = self.get_tree_data()
         to_download = []
         for path, data in tree_data['tree'].items():
@@ -112,17 +110,57 @@ class Repository:
                 if local_sha != data['sha']:
                     to_download.append(path)
         if len(to_download) > 0:
-            self.download_files(to_download, max_download_size)
+            update, backup = Repository.prompt_for_update()
+            if backup:
+                self.backup_local_files()                
+            if update:
+                self.download_files(to_download, max_download_size)
+                print("\nFinished updating")
+                print("Please run wallet client again.")
+                updated = True
+            else:
+                updated = False              
         else:
-            print("Everything is up to date")
+            print("Wallet client is up to date")
+            updated = False
         self.saved_data['sha'] = tree_data['sha']
-        self.data_file.write_text(json.dumps(self.saved_data))
-        print("Finished updating")
+        self.data_file.write_text(json.dumps(self.saved_data))            
+        return updated
 
+    def prompt_for_update():
+        print("An Update is Available")            
+        while True:
+            prompt_for_update = input("Would you like to update the wallet client? (y/n): ")
+            if prompt_for_update.lower() == 'y':
+                while True:
+                    prompt_for_backup = input("Would you like to backup your current version? (y/n): ")
+                    if prompt_for_backup.lower() == 'y':
+                        print()
+                        return True, True
+                    elif prompt_for_backup.lower() == 'n':
+                        return True, False
+                    else:
+                        print("Invalid choice. Please enter 'y' or 'n'.")
+                        print()
+            elif prompt_for_update.lower() == 'n':
+                return False, False
+            else:
+                print("Invalid choice. Please enter 'y' or 'n'.")
+                print()
+    
     def check_for_updates(self, timeout=5):
         if "sha" not in self.saved_data:
-            return True
+            if Repository.auto_update(self):
+                return True
+            else: 
+                return False
         elif self.get_head_sha(timeout) != self.saved_data['sha']:
-            return True
+            if Repository.auto_update(self):
+                return True
+            else: 
+                return False
         else:
-            return False
+            if Repository.auto_update(self):
+                return True
+            else: 
+                return False

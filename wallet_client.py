@@ -1186,44 +1186,25 @@ def main():
             print(f'\nWallet Data:\n"{decrypted_data}"')
     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
     gc.collect()
-    sys.exit(1)
+    sys.exit(0)
 
 if __name__ == "__main__":
     try:
         if repo.check_for_updates():
-            print("An Update is Available")            
-            while True:
-                prompt_for_update = input("Would you like to update the wallet client? (y/n): ")
-                if prompt_for_update.lower() == 'y':
-                    while True:
-                        prompt_for_backup = input("Would you like to backup your current version? (y/n): ")
-                        if prompt_for_backup.lower() == 'y':
-                            repo.auto_update(backup=True)
-                            print("Please run wallet client again.")
-                            break  # Break out of the inner while loop
-                        elif prompt_for_backup.lower() == 'n':
-                            repo.auto_update()
-                            print("Please run wallet client again.")
-                            break  # Break out of the inner while loop
-                        else:
-                            print("Invalid choice. Please enter 'y' or 'n'.")
-                            print()
-                    break  # Break out of the outer while loop
-                elif prompt_for_update.lower() == 'n':
-                    print()
-                    main()
-                else:
-                    print("Invalid choice. Please enter 'y' or 'n'.")
-                    print()
+            exit_code = 1
         else:
+            print()
             main()
+            exit_code = 0 
     except KeyboardInterrupt:
         print("\r  ")
         print("\rProcess terminated by user.")
         QRCodeUtils.close_qr_window(True)
+        exit_code = 1
     except Exception as e:
-        print(f"Error: {e}")        
+        print(f"Error: {e}")
+        exit_code = 1    
     finally:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         gc.collect()
-        sys.exit(1)
+        sys.exit(exit_code)
