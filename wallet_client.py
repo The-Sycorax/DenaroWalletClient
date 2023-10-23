@@ -1192,11 +1192,9 @@ if __name__ == "__main__":
         print("\r  ")
         print("\rProcess terminated by user.")
         QRCodeUtils.close_qr_window(True)
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        gc.collect()
-        sys.exit(1)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {e}")        
+    finally:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         gc.collect()
         sys.exit(1)
