@@ -3,6 +3,7 @@ __pycache__/
 env
 denaro/wallet/wallets
 wallets
-testing.sh
+testing
 old_versions
 github_data.json
+update_config.json

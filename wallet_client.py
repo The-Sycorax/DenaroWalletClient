@@ -20,8 +20,7 @@ sys.path.insert(0, dir_path + "/denaro/wallet")
 from denaro.key_generation import generate
 from denaro.wallet.cryptographic_util import VerificationUtils, CryptoWallet, TOTP_Utils, DataManipulation
 from denaro.wallet.interface_util import QRCodeUtils, UserPrompts
-from denaro.wallet.update_wallet_client import Repository
-repo = Repository(repo_owner="The-Sycorax", repo_name="DenaroWalletClient", branch="main", local_dir=".")
+
 
 is_windows = os.name == 'nt'
 
@@ -1000,7 +999,8 @@ def process_decryptwallet_filter(args):
 
     # Handle the case when the 'filter' subparser is used
     if args.filter_subparser == 'filter':
-        address = args.address.split(',')
+        if args.address:
+            address = args.address.split(',')
         if args.field:
             field = args.field.split(',')
             fields_to_string = ", ".join(field)
@@ -1191,12 +1191,8 @@ def main():
 if __name__ == "__main__":
     exit_code = 1
     try:
-        if repo.check_for_updates():
-            exit_code = 1
-        else:
-            print()
-            main()
-            exit_code = 0 
+        main()
+        exit_code = 0 
     except KeyboardInterrupt:
         print("\r  ")
         print("\rProcess terminated by user.")
