@@ -515,9 +515,9 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     # Handle different scenarios based on whether the wallet is encrypted
     if encrypt:        
         if new_wallet:
-            print("new_wallet is set to True")
-            print("encrypt is set to True.")
-            print("Handling new encrypted wallet...")
+            logging.info("new_wallet is set to True")
+            logging.info("encrypt is set to True.")
+            logging.info("Handling new encrypted wallet...")
             # Handle creation of a new encrypted wallet
             data, totp_secret, hmac_salt, verification_salt, stored_verifier = handle_new_encrypted_wallet(password, totp_code, use2FA, filename, deterministic)
             if not data:
@@ -525,9 +525,9 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return None
         else:
-            print("new_wallet is set to False")
-            print("Existing wallet is encrypted.")
-            print("Handling existing encrypted wallet...")
+            logging.info("new_wallet is set to False")
+            logging.info("Existing wallet is encrypted.")
+            logging.info("Handling existing encrypted wallet...")
             # Handle operations on an existing encrypted wallet
             hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
             if not hmac_salt or not verification_salt or not stored_verifier:
@@ -542,17 +542,17 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return None
         if new_wallet:            
-            print("deterministic is set to True")
-            print("Generating wallet data")
+            logging.info("deterministic is set to True")
+            logging.info("Generating wallet data")
             # Generate the initial data for a new deterministic wallet
             wallet_data = generate(passphrase=password,deterministic=True)
             if encrypt:
-                print("Parseing and encrypting master mnemonic")
+                logging.info("Parseing and encrypting master mnemonic")
                 # Parse and encrypt the mnemonic words individually
                 data["wallet_data"]["entry_data"]["key_data"] = parse_and_encrypt_mnemonic(wallet_data["mnemonic"], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
             else:
-                print("encrypt is set to False")
-                print("Generating data for new unencrypted deterministic wallet...")
+                logging.info("encrypt is set to False")
+                logging.info("Generating data for new unencrypted deterministic wallet...")
                 # Structure for a new unencrypted deterministic wallet
                 data = {
                     "wallet_data": {
@@ -568,13 +568,13 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             # Set the deterministic index value based on the length of the entries in the wallet 
             index = len(data["wallet_data"]["entry_data"]["entries"])
             if encrypt:
-                print("Decrypting and parsing the master mnemonic")
+                logging.info("Decrypting and parsing the master mnemonic")
                 # Decrypt and parse the existing mnemonic for the deterministic wallet
                 mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
                 wallet_data = generate(mnemonic_phrase=mnemonic,passphrase=password, index=index, deterministic=True)
             else:
-                print("encrypt is set to False")
-                print("Generating child address for existing unencrypted deterministic wallet...")
+                logging.info("encrypt is set to False")
+                logging.info("Generating child address for existing unencrypted deterministic wallet...")
                 # Use the existing mnemonic directly if it's not encrypted
                 mnemonic = data["wallet_data"]["entry_data"]["master_mnemonic"]
             
@@ -591,14 +591,14 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                     # Generate the new address based on the existing mnemonic
                     wallet_data = generate(mnemonic_phrase=mnemonic,passphrase=password, index=index, deterministic=True)
     else:
-        print("Deterministic is set to False")
+        logging.info("Deterministic is set to False")
         # For non-deterministic wallets, generate a random wallet data
         wallet_data = generate()
         #print(wallet_data)
         if new_wallet and not encrypt:
-            print("new_wallet is set to True")
-            print("encrypt is set to False")
-            print("Generating data for new unencrypted non-deterministic wallet...")
+            logging.info("new_wallet is set to True")
+            logging.info("encrypt is set to False")
+            logging.info("Generating data for new unencrypted non-deterministic wallet...")
             data = {
                 "wallet_data": {
                     "wallet_type": "non-deterministic",
