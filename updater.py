@@ -9,7 +9,20 @@ import logging
 import shutil
 from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
+# Get the root logger
+root_logger = logging.getLogger()
+
+# Set the level for the root logger
+root_logger.setLevel(logging.INFO)
+
+# Create a handler with the desired format
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(levelname)s: %(message)s')
+handler.setFormatter(formatter)
+
+# Clear any existing handlers from the root logger and add our handler
+root_logger.handlers = []
+root_logger.addHandler(handler)
 
 def fetch_from_github_api(url):
     """

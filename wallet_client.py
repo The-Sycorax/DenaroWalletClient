@@ -33,7 +33,7 @@ else:
 root_logger = logging.getLogger()
 
 # Set the level for the root logger
-root_logger.setLevel(logging.INFO)
+root_logger.setLevel(logging.INFO if '-verbose' in sys.argv else logging.ERROR)
 
 # Create a handler with the desired format
 handler = logging.StreamHandler()
@@ -1131,12 +1131,16 @@ def remove_duplicates_from_address_filter(address_list):
 
 # Main Function
 def main():
+    # Verbose parser for shared arguments
+    verbose_parser = argparse.ArgumentParser(add_help=False)
+    verbose_parser.add_argument('-verbose', action='store_true', help='Enables info and debug messages.')
+
     # Create the parser
     parser = argparse.ArgumentParser(description="Manage and decrypt wallet data.")
     subparsers = parser.add_subparsers(dest='command')
 
     # Subparser for generating a new wallet
-    parser_generatewallet = subparsers.add_parser('generatewallet')
+    parser_generatewallet = subparsers.add_parser('generatewallet', parents=[verbose_parser])
 
     parser_generatewallet.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_generatewallet.add_argument('-encrypt', action='store_true', help="Encrypt the new wallet.")
@@ -1148,13 +1152,13 @@ def main():
     parser_generatewallet.add_argument('-overwrite-password', dest='overwrite_password', help="Password to overwrite an existing wallet that is encrypted.")
     
     # Subparser for generating a new address
-    parser_generateaddress = subparsers.add_parser('generateaddress')
+    parser_generateaddress = subparsers.add_parser('generateaddress', parents=[verbose_parser])
     parser_generateaddress.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_generateaddress.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
     parser_generateaddress.add_argument('-password', help="The password used for encryption and/or deterministic address generation of the specified wallet file.")
     
     # Subparser for decrypting the wallet
-    parser_decryptwallet = subparsers.add_parser('decryptwallet')
+    parser_decryptwallet = subparsers.add_parser('decryptwallet', parents=[verbose_parser])
     parser_decryptwallet.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_decryptwallet.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
     parser_decryptwallet.add_argument('-pretty', action='store_true', help="Print formatted json output for enhanced readability.")
@@ -1163,22 +1167,22 @@ def main():
     
     # Subparser for filter under decryptwallet
     filter_subparser = parser_decryptwallet.add_subparsers(dest='filter_subparser', required=False)
-    parser_filter = filter_subparser.add_parser('filter',help="Filter entries by address and/or field")
+    parser_filter = filter_subparser.add_parser('filter', parents=[verbose_parser], help="Filter entries by address and/or field")
     parser_filter.add_argument('-address', help='One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. Format is: `address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`')
     parser_filter.add_argument('-field', help='One or more fields to filter by. Format is: `field=id,mnemonic,private_key,public_key,address`.')
     parser_filter.add_argument('-pretty', action='store_true', help="Print formatted json output for enhanced readability.", dest="filter_subparser_pretty")
-
+    
     args = parser.parse_args()
     if args.command == "generatewallet":
         check_args(parser,args)        
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa,deterministic=args.deterministic,backup=args.backup,disable_warning=args.disable_overwrite_warning,overwrite_password=args.overwrite_password,from_cli=True)    
         if address:
-            logging.info(f"Successfully generated new wallet. Address: {address}\n")
+            print(f"\nSuccessfully generated new wallet. Address: {address}")
 
     elif args.command == "generateaddress":
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False,from_cli=True)    
         if address:
-            logging.info(f"Successfully generated address and stored wallet entry. Address: {address}\n")
+            print(f"\nSuccessfully generated address and stored wallet entry. Address: {address}")
 
     elif args.command == 'decryptwallet':
         address, field, args.filter_subparser_pretty = process_decryptwallet_filter(args)
