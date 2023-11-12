@@ -49,7 +49,7 @@ root_logger.addHandler(handler)
 # Filesystem Functions
 def is_wallet_encrypted(data_segment):
     """
-    Determine if a given segment of data appears to be encrypted.
+    Determines if a given segment of data appears to be encrypted.
     """
     # Try to decode the data as JSON.
     try:
@@ -82,7 +82,7 @@ def ensure_wallet_directories_exist():
 
 def get_normalized_filepath(filename):
     """
-    Get a normalized file path, ensuring the directory exists.
+    Gets a normalized file path, ensuring the directory exists.
     
     Parameters:
         filename (str): The name of the file where the data will be saved.
@@ -133,11 +133,11 @@ def _load_data(filename, new_wallet):
 # Wallet Helper Functions
 def generate_encrypted_wallet_data(wallet_data, current_data, password, totp_secret, hmac_salt, verification_salt, stored_verifier):
     """Overview:
-        The `generate_encrypted_wallet_data` function servs as a utility in for constructing a fully encrypted representation 
+        The `generate_encrypted_wallet_data` function serves as a utility for constructing a fully encrypted representation 
         of the wallet's data. It works by individually encrypting fields like private keys or mnemonics and then organizing
         them in a predefined format. This function is vital in ensuring that sensitive wallet components remain confidential.
         
-        Arguments:
+        Parameters:
         - wallet_data (dict): Contains essential wallet information like private keys or mnemonics.
         - current_data (dict): Existing wallet data, utilized to determine the next suitable ID for the entry.
         - password (str): The user's password, used for the encryption process.
@@ -174,7 +174,7 @@ def generate_unencrypted_wallet_data(wallet_data, current_data):
         easy storage and retrieval. This function is pivotal in scenarios where encryption isn't mandated, but structured 
         data organization is requisite.
         
-        Arguments:
+        Parameters:
         - wallet_data (dict): The unencrypted wallet data.
         - current_data (dict): Existing wallet data, utilized to determine the next suitable ID for the entry.
         
@@ -206,7 +206,7 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
         to produce a secure and accessible wallet. The function can adapt to both deterministic and non-deterministic 
         wallet types based on user preference.
         
-        Arguments:
+        Parameters:
         - password (str): The user's password intended for the encrypted wallet.
         - totp_code (str): Time-based One-Time Password for Two-Factor Authentication.
         - use2FA (bool): Indicates whether Two-Factor Authentication is enabled or not.
@@ -296,18 +296,23 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
     return result
 
 def handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic):
-    """
-    Handles various operations for an existing encrypted wallet.
+    """Overview:
+        The `handle_existing_encrypted_wallet` function verifies access to an encrypted wallet by checking the provided password
+        and decoding HMAC and verification salts from the wallet data. It conducts verification of the user's password against the
+        stored verifier and the HMAC to ensure data integrity. If password verification fails, it updates the number of failed password
+        attempts assocated with the wallet, it then logs an error for authentication failure or data corruption. For wallets with Two-Factor
+        Authentication, it additionally manages TOTP verification. Upon successful verifications, it returns cryptographic components such as
+        HMAC salt, verification salt, stored verifier, and TOTP secret.
     
-    Arguments:
-    - filename: The name of the wallet file
-    - data: The wallet data
-    - password: The user's password
-    - totp_code: The TOTP code for 2FA
-    - deterministic: Boolean indicating if the wallet is deterministic
-    
-    Returns:
-    - A tuple containing HMAC salt, verification salt, stored verifier, and TOTP secret
+        Parameters:
+        - filename: The name of the wallet file
+        - data: The wallet data
+        - password: The user's password
+        - totp_code: The TOTP code for 2FA
+        - deterministic: Boolean indicating if the wallet is deterministic
+        
+        Returns:
+        - A tuple containing HMAC salt, verification salt, stored verifier, and TOTP secret
     """
     # Fail if no password is provided for an encrypted wallet
     if not password:
@@ -354,15 +359,14 @@ def parse_and_encrypt_mnemonic(words, password, totp_secret, hmac_salt, verifica
         against potential threats. This heightened level of security is crucial given the critical nature of mnemonics
         in digital wallets.
         
-        Arguments:
+        Parameters:
         - words (str): The mnemonic phrase.
         - password (str): The user's password, used for the encryption process.
         - totp_secret (str): The TOTP secret token used for Two-Factor Authentication.
         - hmac_salt (bytes): Salt for HMAC generation.
         - verification_salt (bytes): Salt for password verification.
         - stored_verifier (bytes): The stored hash of the password, used for verification.
-        
-        
+                
         Returns:
         - list: A list encapsulating the encrypted representations of each mnemonic word.
     """
@@ -394,7 +398,7 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
         key recovery operations. This function undertakes the task of decrypting each encrypted mnemonic word and
         assembling them back into their original, readable sequence. 
         
-        Arguments:
+        Parameters:
         - encrypted_json (list): A list containing encrypted mnemonic words.
         - password (str): The user's password, used for the decryption process.
         - totp_secret (str): The TOTP secret token used for Two-Factor Authentication.
@@ -443,18 +447,18 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         To conclude its operations, the function ensures that any transient sensitive data, especially those retained in 
         memory, are securely eradicated, mitigating risks of unintended data exposure or leaks.
            
-    Arguments:
-    - filename: File path designated for the storage or retrieval of wallet data.
-    - password (str): The user's password, used for the various cryptographic processes.
-    - totp_code: An optional Time-based One-Time Password, used for Two-Factor Authentication.
-    - new_wallet (bool, optional): Specifies if the operation involves creating a new wallet.
-    - encrypt (bool, optional): Specifies if the wallet data should undergo encryption.
-    - use2FA (bool, optional): Specifies if Two-Factor Authentication should be enabled.
-    - deterministic (bool, optional): Specifies if deterministic address generation should
-      be enabled for the wallet.
-    
-    Returns:
-    - str: A string that represents a newly generated address.
+        Parameters:
+        - filename: File path designated for the storage or retrieval of wallet data.
+        - password (str): The user's password, used for the various cryptographic processes.
+        - totp_code: An optional Time-based One-Time Password, used for Two-Factor Authentication.
+        - new_wallet (bool, optional): Specifies if the operation involves creating a new wallet.
+        - encrypt (bool, optional): Specifies if the wallet data should undergo encryption.
+        - use2FA (bool, optional): Specifies if Two-Factor Authentication should be enabled.
+        - deterministic (bool, optional): Specifies if deterministic address generation should
+          be enabled for the wallet.
+        
+        Returns:
+        - str: A string that represents a newly generated address.
     """
     # Initialize mnemonic to None
     mnemonic = None  
@@ -650,7 +654,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     
         For deterministic wallets, only the master mnemonic phrase is decrypted using the `decrypt_and_parse_mnemonic`function. 
         Following decryption, the master mnemonic is utilized, along with a user-defined password and an entry index (ID), as 
-        input parameters for the `generate` function. The `generate` function is used deterministically produces additional wallet
+        input parameters for the `generate` function. The `generate` function is used to deterministically produce additional wallet
         entry data, consisting of the private key, public key, and address
     
         Conversely, for non-deterministic wallets, each wallet entry has its own unique mnemonic phrase that must undergo the same 
@@ -671,7 +675,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
         Entry data can be filtered by specific addresses or specific field names and then formatted according to the 
         `pretty` flag, yielding either a prettified JSON string or a dictionary.
         
-        Args:
+        Parameters:
         - filename (str): The path to the file that contains the encrypted wallet data.
         - password (str): User's password used for cryptographic operations during decryption.
         - totp_code (str, optional): A Time-based One-Time Password used in Two-Factor Authentication. Required if TFA was enabled during wallet encryption.
@@ -841,20 +845,19 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
 
 # Argparse Helper Functions
 def sort_arguments_based_on_input(argument_names):
-    """
-    Overview:
+    """Overview:
         Sorts a list of CLI argument names based on their positional occurrence in sys.argv.
-        Any argument not found in sys.argv is filtered out. 
-        The returned list is then formatted as a comma-separated string.
+        Any argument not found in sys.argv is filtered out. The returned list is then formatted
+        as a comma-separated string.
 
-    Arguments:
-    - argument_names (list): A list of argument names to be sorted.
-  
-    Returns:
-    - str: A string of sorted argument names separated by commas with 'and' added before the last argument.
-  
-    Note:
-        This function leverages the sys.argv array, which captures the command-line arguments passed to the script.
+        Parameters:
+        - argument_names (list): A list of argument names to be sorted.
+    
+        Returns:
+        - str: A string of sorted argument names separated by commas with 'and' added before the last argument.
+    
+        Note:
+            This function leverages the sys.argv array, which captures the command-line arguments passed to the script.
     """
     # Filter out arguments that are not present in sys.argv
     filtered_args = [arg for arg in argument_names if arg in sys.argv]
@@ -871,19 +874,18 @@ def sort_arguments_based_on_input(argument_names):
         return ''
 
 def check_args(parser,args):
-    """
-    Overview:
+    """Overview:
         Validates combinations of CLI arguments and returns an error message via the parser
         if invalid combinations are found. Specifically, it checks for required combinations
         that involve the '-password' flag.
 
-    Arguments:
-    - parser (argparse.ArgumentParser): The argument parser object.
-    - args (argparse.Namespace): The argparse namespace containing parsed arguments.
-  
-    Note:
-        Utilizes the `sort_arguments_based_on_input` function to display arguments in the
-        order in which they were passed in the command line.
+        Parameters:
+        - parser (argparse.ArgumentParser): The argument parser object.
+        - args (argparse.Namespace): The argparse namespace containing parsed arguments.
+    
+        Note:
+            Utilizes the `sort_arguments_based_on_input` function to display arguments in the
+            order in which they were passed in the command line.
     """
     # -deterministic, -2fa, and -encrypt requires -password
     if args.deterministic and args.tfa and args.encrypt and not args.password:
@@ -925,8 +927,7 @@ def check_args(parser,args):
         parser.error(f"\n{sorted_args} requires the -password argument to be set.\nContext: A password is required to encrypt the wallet.")
 
 def process_decryptwallet_filter(args):
-    """
-    Overview:
+    """Overview:
         This function manages the '-filter' argument and 'filter' subparser in the 'decryptwallet' command-line interface.. 
         It is tasked with extracting and returning specified filter options, which could be based on address and/or field.
         
@@ -945,11 +946,11 @@ def process_decryptwallet_filter(args):
         - Utilize the '-address' option to specify one or more addresses to be filtered.
         - Utilize the '-field' option to specify one or more field parameters for filtering.
     
-    Arguments:
-        - args (argparse.Namespace): The namespace from argparse containing all the parsed command-line arguments.
-    
-    Returns:
-        - tuple: A tuple consisting of the filtered address, the filtered field(s), and the value of args.filter_subparser_pretty.
+        Parameters:
+            - args (argparse.Namespace): The namespace from argparse containing all the parsed command-line arguments.
+        
+        Returns:
+            - tuple: A tuple consisting of the filtered address, the filtered field(s), and the value of args.filter_subparser_pretty.
     """
     # Initialize address and field variables
     address = []
@@ -1034,18 +1035,18 @@ def process_decryptwallet_filter(args):
     return address, field, args.filter_subparser_pretty
 
 def validate_filter_string(input_string):
-    """
-    Validates the input string based on specific formatting rules for 'field' and 'address'.
-    1. Checks basic syntax using regular expression.
-    2. Checks for duplicate keys within each field set.
-    3. Checks for multiple occurrences of 'address' and 'field'.
-    
-    Parameters:
-        input_string (str): The string to be validated.
+    """Overview:
+        Validates the input string based on specific formatting rules for 'field' and 'address'.
+        1. Checks basic syntax using regular expression.
+        2. Checks for duplicate keys within each field set.
+        3. Checks for multiple occurrences of 'address' and 'field'.
         
-    Returns:
-        bool: True if the string is valid, False otherwise.
-        str: A message indicating why the validation failed, or 'Valid' if it succeeded.
+        Parameters:
+            input_string (str): The string to be validated.
+            
+        Returns:
+            bool: True if the string is valid, False otherwise.
+            str: A message indicating why the validation failed, or 'Valid' if it succeeded.
     """
     # Basic syntax check using regex
     #pattern = re.compile(r'^(?:(field=\{[\w\d,]+\})|(address=\{[\w\d]+\}))(?:,(?!.*\1)(field=\{[\w\d,]+\}|address=\{[\w\d]+\}))?$')
@@ -1089,14 +1090,14 @@ def validate_filter_string(input_string):
     return True, "Valid"
 
 def remove_duplicates_from_address_filter(address_list):
-    """
-    Remove duplicate addresses from the list while honoring the first occurrence of hyphenated or non-hyphenated versions.
-    
-    Arguments:
-        address_list (list): The list of addresses, possibly containing duplicates and/or hyphenated versions.
+    """Overview:
+        Remove duplicate addresses from the list while honoring the first occurrence of hyphenated or non-hyphenated versions.
         
-    Returns:
-        list: A deduplicated list of addresses.
+        Parameters:
+            address_list (list): The list of addresses, possibly containing duplicates and/or hyphenated versions.
+            
+        Returns:
+            list: A deduplicated list of addresses.
     """
     
     # Dictionary to keep track of the first occurrence of each unhyphenated address.
