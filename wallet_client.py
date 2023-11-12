@@ -1185,8 +1185,6 @@ def main():
         if decrypted_data:
             print(f'\nWallet Data:\n"{decrypted_data}"')
     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-    gc.collect()
-    sys.exit(0)
 
 if __name__ == "__main__":
     exit_code = 1
