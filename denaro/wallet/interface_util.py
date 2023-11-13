@@ -285,82 +285,46 @@ class QRCodeUtils:
 class UserPrompts:
     
     @staticmethod
-    def get_backup_preference(backup=None):
+    def confirmation_prompt(msg, cli_param=False):
         """
-        Overview:
-        Asks the user whether they would like to back up an existing wallet.
-
-        Arguments:
-        - backup (str, optional): Default answer for the prompt. If not provided, input is taken from user.
-
+        Displays a prompt message and awaits user input for confirmation.
+    
+        Parameters:
+        - msg (str): The prompt message to display to the user.
+    
         Returns:
-        - bool: True if the user wants to back up the wallet, False otherwise.
+        - bool: True if the user confirms ('y'), False if the user declines ('n') or quits ('/q').
         """
-        # Loop until a valid input is received
         while True:
-            # Prompt the user for backup preference or use the provided default
-            backup_wallet = backup or input("WARNING: Wallet already exists. Do you want to back it up? [y/n] (or type '/q' to exit the script): ")
-            # Normalize the input and check for valid options
-            if backup_wallet.strip().lower() in ['y', 'n']:
-                return backup_wallet.strip().lower() == 'y'
-            elif backup_wallet.strip().lower() == "/q":
-                #return False
-                return backup_wallet
+            confirmation = cli_param or input(msg)  # Displays the prompt and awaits input
+            if confirmation.strip().lower() in ['y', 'n']:
+                return confirmation.strip().lower() == 'y'  # Returns True if 'y', False if 'n'
+            elif confirmation.strip().lower() == "/q":
+                return
             else:
-                print("Invalid input.")
+                print("Invalid input.\n")  # Informs the user of invalid input and repeats the prompt
 
     @staticmethod
-    def get_overwrite_preference(disable_warning=False):
-        """
-        Overview:
-        Asks the user for permission to overwrite an existing wallet.
-
-        Arguments:
-        - disable_warning (bool): If True, bypasses the warning and returns True.
-
-        Returns:
-        - bool: True if the user allows overwriting, False otherwise.
-        """
-        # Check if warnings are disabled
-        if not disable_warning:
-            while True:
-                # Display a critical warning message
-                print("\nCRITICAL WARNING: You have chosen not to back up the existing wallet.")
-                # Prompt for user confirmation
-                overwrite_wallet = input("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? [y/n] (or type '/q' to exit the script): ")
-                if overwrite_wallet.strip().lower() in ['y', 'n']:
-                    return overwrite_wallet.strip().lower() == 'y'
-                elif overwrite_wallet.strip().lower() == "/q":
-                    return overwrite_wallet
-                else:
-                    print("Invalid input.")
-        else:
-            return True
-
-    @staticmethod
-    def get_password(password=None, from_cli=False):
+    def get_password(password=None):
         """
         Overview:
         Prompts the user for a password and its confirmation.
 
         Arguments:
         - password (str, optional): Default password. If provided, no prompt will be displayed.
-        - from_cli (bool): Flag indicating if the password is being set from the command line.
 
         Returns:
         - str: The password entered by the user.
         """
         # Loop until passwords match
         while True:
-            # If password is not provided or not being set from CLI
-            if not from_cli and not password or from_cli and not password:
-                print()
+            # If password is not provided
+            if not password:
                 # Prompt for password
                 password_input = getpass.getpass("Enter wallet password: ")
                 # Prompt for password confirmation
                 password_confirm = getpass.getpass("Confirm password: ")
             else:
-                print()
                 # Use the provided password or prompt for it
                 password_input = password or getpass.getpass("Enter wallet password: ")
                 password_confirm = password_input
@@ -369,7 +333,7 @@ class UserPrompts:
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not password_input])
                 return password_input
             else:
-                print("Passwords do not match. Please try again.")
+                print("Passwords do not match. Please try again.\n")
     
     @staticmethod
     def user_input_listener(stop_event):
@@ -479,7 +443,7 @@ class UserPrompts:
             sys.exit(1)  
 
     @staticmethod
-    def backup_and_overwrite_helper(data, filename, password, encrypt, backup, disable_warning, from_cli, deterministic):
+    def backup_and_overwrite_helper(data, filename, password, encrypt, backup, disable_warning, deterministic):
         """
         Overview:
         Handles the logic for backing up and overwriting wallet data.
@@ -491,25 +455,24 @@ class UserPrompts:
         - encrypt (bool): Whether to encrypt the backup.
         - backup (str): User's preference for backing up.
         - disable_warning (bool): Whether to display warnings.
-        - from_cli (bool): Whether the operation is initiated from the command line interface.
+        - deterministic (bool): Whether the wallet type is deterministic.
 
         Returns:
         - bool: True if successful, False or None otherwise.
         """
-        # Initialize verification variables
+        # Initialize variables
         password_verified = False
-        hmac_verified = False
-
+        hmac_verified = False        
+        
         # Convert CLI boolean values to 'y' or 'n'
-        if from_cli:
-            if backup == "True":
-                backup = "y"
-            if backup == "False":
-                backup = "n"
+        if backup in ["True"]:
+            backup = "y"
+        if backup in ["False"]:
+            backup = "n"
 
         # Handle the backup preference
-        perform_backup = UserPrompts.get_backup_preference(backup)
-        if perform_backup in ['/q']:
+        perform_backup = UserPrompts.confirmation_prompt("WARNING: Wallet already exists. Do you want to back it up? [y/n] (or type '/q' to exit the script): ", backup)
+        if perform_backup is None:
             return
         if perform_backup:
             # Construct the backup filename
@@ -519,7 +482,7 @@ class UserPrompts:
             try:
                 # Create the backup
                 shutil.copy(filename, backup_path)
-                print(f"Backup created at {backup_path}\n")
+                print(f"Backup created at {backup_path}")
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return True
 
@@ -527,10 +490,17 @@ class UserPrompts:
                 logging.error(f" Could not create backup: {e}\n")
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return
-        else:
+        else:            
+            if not disable_warning:
+                if not backup:
+                    print()
+                logging.critical("You have chosen not to back up the existing wallet.")
+                perform_overwrite = UserPrompts.confirmation_prompt("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? [y/n] (or type '/q' to exit the script): ")
+            else:
+                perform_overwrite = True
             # Handle the overwrite preference
-            perform_overwrite = UserPrompts.get_overwrite_preference(disable_warning)
-            if perform_overwrite in ['/q']:
+            #perform_overwrite = UserPrompts.get_overwrite_preference(disable_warning)
+            if perform_overwrite is None:
                 return
             if perform_overwrite:
                 # Print messages based on the CLI boolean values
@@ -541,7 +511,6 @@ class UserPrompts:
 
                 if password and encrypt:
                     print("Overwrite password provided.")
-
                     # Verify the password and HMAC to prevent brute force
                     password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
                     
@@ -559,8 +528,9 @@ class UserPrompts:
                 # If the wallet is encrypted and the password and hmac have not yet been varified then enter while loop
                 if encrypt and not (password_verified and hmac_verified) and data:
                     while True:
+                        print()
                         # Prompt user for password
-                        password_input = UserPrompts.get_password(password=password if password and (password_verified and hmac_verified) else None,from_cli=True)
+                        password_input = UserPrompts.get_password(password=password if password and (password_verified and hmac_verified) else None)
                         # Verify the password and HMAC
                         password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
     
@@ -598,7 +568,7 @@ class UserPrompts:
                             # Overwrite wallet with empty data
                             with open(filename, 'w') as file:
                                 file.write("")
-                                print("\nWallet data permanetly erased.")
+                                print("Wallet data permanetly erased.")
                         except Exception as e:
                             logging.error(f" Could not write to file: {e}")
                             DataManipulation.secure_delete([var for var in locals().values() if var is not None])

@@ -32,7 +32,7 @@ else:
 root_logger = logging.getLogger()
 
 # Set the level for the root logger
-root_logger.setLevel(logging.INFO if '-verbose' in sys.argv else logging.ERROR)
+root_logger.setLevel(logging.INFO if '-verbose' in sys.argv else logging.WARNING)
 
 # Create a handler with the desired format
 handler = logging.StreamHandler()
@@ -419,7 +419,7 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
     return result
 
 # Wallet Orchestrator Functions
-def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None,from_cli=False):
+def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None):
     """Overview:
         The `generateAddressHelper` function serves as a central orchestrator for facilitating the creation, 
         integration, and management of wallet data. This function is designed to accomodate different scenarios 
@@ -504,9 +504,12 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     if new_wallet and wallet_exists:
         if "wallet_type" in data["wallet_data"]:
             deterministic = data["wallet_data"]["wallet_type"] == "deterministic"
-        if not UserPrompts.backup_and_overwrite_helper(data, filename, overwrite_password, encrypt, backup, disable_warning, from_cli, deterministic):
+        if not UserPrompts.backup_and_overwrite_helper(data, filename, overwrite_password, encrypt, backup, disable_warning, deterministic):
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return
+        else:
+            if '-verbose' in sys.argv:
+                print()
         
     if new_wallet:
         encrypt = stored_encrypt_param    
@@ -1174,12 +1177,12 @@ def main():
     args = parser.parse_args()
     if args.command == "generatewallet":
         check_args(parser,args)        
-        address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa,deterministic=args.deterministic,backup=args.backup,disable_warning=args.disable_overwrite_warning,overwrite_password=args.overwrite_password,from_cli=True)    
+        address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa,deterministic=args.deterministic,backup=args.backup,disable_warning=args.disable_overwrite_warning,overwrite_password=args.overwrite_password)    
         if address:
             print(f"\nSuccessfully generated new wallet. Address: {address}")
 
     elif args.command == "generateaddress":
-        address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False,from_cli=True)    
+        address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False)    
         if address:
             print(f"\nSuccessfully generated address and stored wallet entry. Address: {address}")
 
