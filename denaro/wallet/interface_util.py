@@ -14,7 +14,6 @@ import datetime
 import time
 import threading
 import select
-import termios
 import sys
 import base64
 from cryptographic_util import VerificationUtils, DataManipulation

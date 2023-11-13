@@ -5,7 +5,6 @@ import binascii
 import logging
 import argparse
 import sys
-import readline
 import threading
 import gc
 from collections import Counter, OrderedDict
@@ -27,7 +26,7 @@ is_windows = os.name == 'nt'
 if is_windows:
     import msvcrt
 else:
-    import termios, fcntl
+    import termios, fcntl, readline
 
 # Get the root logger
 root_logger = logging.getLogger()
