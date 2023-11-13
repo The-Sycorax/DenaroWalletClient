@@ -299,7 +299,7 @@ class UserPrompts:
         # Loop until a valid input is received
         while True:
             # Prompt the user for backup preference or use the provided default
-            backup_wallet = backup or input("WARNING: Wallet already exists. Do you want to back it up? (y/n)? ")
+            backup_wallet = backup or input("WARNING: Wallet already exists. Do you want to back it up? [y/n] (or type '/q' to exit the script): ")
             # Normalize the input and check for valid options
             if backup_wallet.strip().lower() in ['y', 'n']:
                 return backup_wallet.strip().lower() == 'y'
@@ -327,7 +327,7 @@ class UserPrompts:
                 # Display a critical warning message
                 print("\nCRITICAL WARNING: You have chosen not to back up the existing wallet.")
                 # Prompt for user confirmation
-                overwrite_wallet = input("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? (y/n)? ")
+                overwrite_wallet = input("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? [y/n] (or type '/q' to exit the script): ")
                 if overwrite_wallet.strip().lower() in ['y', 'n']:
                     return overwrite_wallet.strip().lower() == 'y'
                 elif overwrite_wallet.strip().lower() == "/q":

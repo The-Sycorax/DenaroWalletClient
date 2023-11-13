@@ -705,7 +705,7 @@ def main():
                     auto_update_confirmed = False
                     # If the prompt is not disabled, ask the user for confirmation to update.
                     if not args.disable_prompt:
-                        if confirmation_prompt("An update for the wallet client is available. Would you like to continue? [y/n]:"):
+                        if confirmation_prompt("An update for the wallet client is available. Would you like to continue? [y/n] (or type /q to exit the script): "):
                             auto_update_confirmed = True
                     else:
                         # If the prompt is disabled, set the confirmation flag to True directly.
@@ -778,7 +778,7 @@ def main():
                 # If the specified version is older, confirm with the user if the prompt is not disabled.
                 downgrade_confirmed = False
                 if not args.disable_prompt:
-                    msg = f"You are attempting to downgrade to version {args.version}. Are you sure you want to continue? [y/n]: "
+                    msg = f"You are attempting to downgrade to version {args.version}. Are you sure you want to continue? [y/n] (or type /q to exit the script): "
                     if confirmation_prompt(msg):
                         downgrade_confirmed = True
                 else:
