@@ -585,6 +585,10 @@ def main():
                     # Log an error and exit if fetching the commit SHA failed.
                     logging.error(" Failed to fetch the latest commit for the 'dev' channel.")
                     exit(1)
+                elif commit_sha == config.get('commit_sha'):
+                    # If the current version is the same as the specified, log the information and exit.
+                    logging.info(f" The wallet client is already at the latest dev version.")
+                    exit(0)
                 # No need to check for downgrades in the dev channel, update to the latest commit.
                 msg = " Updating wallet client to the latest commit."
                 perform_update(owner, repo, commit_sha, msg)
