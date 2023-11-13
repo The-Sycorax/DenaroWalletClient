@@ -303,9 +303,9 @@ class UserPrompts:
             # Normalize the input and check for valid options
             if backup_wallet.strip().lower() in ['y', 'n']:
                 return backup_wallet.strip().lower() == 'y'
-            elif backup_wallet.strip().lower() == "\q":
+            elif backup_wallet.strip().lower() == "/q":
                 #return False
-                return backup_wallet.strip().lower() == '\q'
+                return backup_wallet.strip().lower() == '/q'
             else:
                 print("Invalid input.")
 
@@ -330,7 +330,7 @@ class UserPrompts:
                 overwrite_wallet = input("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? (y/n)? ")
                 if overwrite_wallet.strip().lower() in ['y', 'n']:
                     return overwrite_wallet.strip().lower() == 'y'
-                elif overwrite_wallet.strip().lower() == "\q":
+                elif overwrite_wallet.strip().lower() == "/q":
                     return False
                 else:
                     print("Invalid input.")

@@ -496,15 +496,15 @@ def confirmation_prompt(msg):
     - msg (str): The prompt message to display to the user.
 
     Returns:
-    - bool: True if the user confirms ('y'), False if the user declines ('n') or quits ('\q').
+    - bool: True if the user confirms ('y'), False if the user declines ('n') or quits ('/q').
     """
     print()
     while True:
         confirmation = input(msg)  # Displays the prompt and awaits input
         if confirmation.strip().lower() in ['y', 'n']:
             return confirmation.strip().lower() == 'y'  # Returns True if 'y', False if 'n'
-        elif confirmation.strip().lower() == "\q":
-            return confirmation.strip().lower() == '\q'  # Additional handling if '\q' is entered
+        elif confirmation.strip().lower() == "/q":
+            exit(0)  # Additional handling if '/q' is entered
         else:
             print("Invalid input.\n")  # Informs the user of invalid input and repeats the prompt
 
