@@ -305,7 +305,7 @@ class UserPrompts:
                 return backup_wallet.strip().lower() == 'y'
             elif backup_wallet.strip().lower() == "/q":
                 #return False
-                return backup_wallet.strip().lower() == '/q'
+                return backup_wallet
             else:
                 print("Invalid input.")
 
@@ -331,7 +331,7 @@ class UserPrompts:
                 if overwrite_wallet.strip().lower() in ['y', 'n']:
                     return overwrite_wallet.strip().lower() == 'y'
                 elif overwrite_wallet.strip().lower() == "/q":
-                    return False
+                    return overwrite_wallet
                 else:
                     print("Invalid input.")
         else:
@@ -508,7 +508,10 @@ class UserPrompts:
                 backup = "n"
 
         # Handle the backup preference
-        if UserPrompts.get_backup_preference(backup):
+        perform_backup = UserPrompts.get_backup_preference(backup)
+        if perform_backup in ['/q']:
+            return
+        if perform_backup:
             # Construct the backup filename
             base_filename = os.path.basename(filename)
             backup_name, _ = os.path.splitext(base_filename)
@@ -526,7 +529,10 @@ class UserPrompts:
                 return
         else:
             # Handle the overwrite preference
-            if UserPrompts.get_overwrite_preference(disable_warning):
+            perform_overwrite = UserPrompts.get_overwrite_preference(disable_warning)
+            if perform_overwrite in ['/q']:
+                return
+            if perform_overwrite:
                 # Print messages based on the CLI boolean values
                 if disable_warning:
                     if backup == "n":
