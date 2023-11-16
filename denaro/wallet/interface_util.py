@@ -495,7 +495,7 @@ class UserPrompts:
                 if not backup:
                     print()
                 logging.critical("You have chosen not to back up the existing wallet.")
-                perform_overwrite = UserPrompts.confirmation_prompt("Proceeding will PERMANENTLY OVERWRITE the existing wallet. Continue? [y/n] (or type '/q' to exit the script): ")
+                perform_overwrite = UserPrompts.confirmation_prompt("Proceeding will OVERWRITE the existing wallet. Continue? [y/n] (or type '/q' to exit the script): ")
             else:
                 perform_overwrite = True
             # Handle the overwrite preference
@@ -515,7 +515,7 @@ class UserPrompts:
                     password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
                     
                     # Based on password verification, update or reset the number of failed attempts
-                    data = DataManipulation.update_or_reset_attempts(data, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                    data = DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
                     DataManipulation._save_data(filename,data)
                     
                     # Check if there is still wallet data verify the password and HMAC again
@@ -535,7 +535,7 @@ class UserPrompts:
                         password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
     
                         # Based on password verification, update or reset the number of failed attempts
-                        data = DataManipulation.update_or_reset_attempts(data, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                        data = DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
                         DataManipulation._save_data(filename,data)
                         
                         # If wallet data has not erased yet verify the password and HMAC again
@@ -566,17 +566,15 @@ class UserPrompts:
                         print()
                         try:
                             # Overwrite wallet with empty data
-                            with open(filename, 'w') as file:
-                                file.write("")
-                                print("Wallet data permanetly erased.")
+                            DataManipulation.delete_wallet(filename, data)
+                            print("Wallet data has been erased.")
+                            time.sleep(0.5)
                         except Exception as e:
-                            logging.error(f" Could not write to file: {e}")
                             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                             return
                         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                         return True
                 else:
-                    print()
                     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                     return True
             else:

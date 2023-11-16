@@ -9,6 +9,7 @@ import threading
 import gc
 from collections import Counter, OrderedDict
 import re
+import time
 
 # Get the absolute path of the directory containing the current script.
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -327,8 +328,12 @@ def handle_existing_encrypted_wallet(filename, data, password, totp_code, determ
     password_verified, hmac_verified, stored_verifier = VerificationUtils.verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
 
     # Based on password verification, update or reset the number of failed attempts
-    data = DataManipulation.update_or_reset_attempts(data, hmac_salt, password_verified, deterministic)
-    DataManipulation._save_data(filename,data)
+    data = DataManipulation.update_or_reset_attempts(data, filename, hmac_salt, password_verified, deterministic)
+    if data is None:
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        return None, None, None, None
+    else:
+        DataManipulation._save_data(filename,data)
 
     # Verify the password and HMAC
     password_verified, hmac_verified, stored_verifier = VerificationUtils.verify_password_and_hmac(data, password, hmac_salt, verification_salt, deterministic)
@@ -1204,9 +1209,9 @@ if __name__ == "__main__":
         QRCodeUtils.close_qr_window(True)
         exit_code = 1
     except Exception as e:
-        print(f"Error: {e}")
+        logging.error(f"{e}")
         exit_code = 1    
     finally:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         gc.collect()
-        sys.exit(exit_code)
+        #sys.exit(exit_code)

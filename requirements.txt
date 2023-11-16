@@ -8,3 +8,4 @@ pycryptodome==3.19.0
 pyotp==2.9.0
 qrcode==7.4.2
 Pillow==10.1.0
+filelock==3.13.1
