@@ -1,4 +1,4 @@
-# Denaro Wallet Client
+# Denaro Wallet ClientV2
 This repo contains the source code for a wallet client developed for the Denaro cryptocurrency. Designed for high-level security and asset management, the client can be adapted for use with other cryptocurrencies. It employs multiple security mechanisms and dual-layer encryption, using ChaCha20-Poly1305 and AES-GCM, to safeguard cryptographic keys.
 
 Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro
@@ -157,6 +157,16 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * Creates a back up of an existing encrypted wallet and overwrites it with an un-encrypted, deterministic wallet, while skipping various prompts: 
     ```bash
     python3 wallet_client.py generatewallet -wallet=wallet.json -deterministic -backup=True -disable-overwrite-warning -overwrite-password=MySecurePassword
+    ```
+* Imports Privatekey Hex : 
+    ```bash
+    python3 wallet_client.py importkey -privatekey PK -wallet walletname
+    ```
+</details>
+
+* Shows Imported Wallets information Privatekey, Publickey, Address, Mnemonic : 
+    ```bash
+    python3 wallet_client.py showimportedkeys -wallet wallet -password password
     ```
 </details>
 
