@@ -10,6 +10,19 @@ import gc
 from collections import Counter, OrderedDict
 import re
 import time
+from fastecdsa import keys, curve
+from enum import Enum
+from fastecdsa.point import Point
+import base58
+
+
+ENDIAN = 'little'  # Defining byte order as little-endian
+CURVE = curve.P256 
+
+class AddressFormat(Enum):
+    FULL_HEX = 'hex'  # Full hexadecimal format
+    COMPRESSED = 'compressed'  # Compressed format
+
 
 # Get the absolute path of the directory containing the current script.
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -294,6 +307,25 @@ def handle_new_encrypted_wallet(password, totp_code, use2FA, filename, determini
     result = data, totp_secret, hmac_salt, verification_salt, verifier
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
+
+def show_imported_keys(filename, password, totp_code=None):
+    # Ensure the wallet directories exist
+    ensure_wallet_directories_exist()
+    # Normalize filename
+    filename = get_normalized_filepath(filename)
+    # Load the existing wallet data
+    data, wallet_exists = _load_data(filename, False)
+    if not wallet_exists:
+        return "Wallet file not found."
+    
+    # Decrypt wallet entries if necessary
+    if is_wallet_encrypted(json.dumps(data["wallet_data"])):
+        decrypted_data = decryptWalletEntries(filename, password, totp_code, address=[], fields=["id", "mnemonic", "private_key", "public_key", "address"], pretty=True)
+        return decrypted_data
+    else:
+        # Handle non-encrypted wallet
+        return json.dumps(data, indent=4)
+
 
 def handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic):
     """Overview:
@@ -643,6 +675,117 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     result = wallet_data['address']
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
+
+
+def private_to_public_key_fastecdsa(private_key_hex):
+    """
+    Convert a private key in hexadecimal format to a public key and its compressed representation.
+    
+    Parameters:
+        private_key_hex (str): Private key in hexadecimal format.
+        
+    Returns:
+        tuple: A tuple containing the ECDSA point representing the public key and its compressed hexadecimal representation.
+    """
+    # Convert the hexadecimal private key to an integer
+    private_key_int = int(private_key_hex, 16)
+    
+    # Use fastecdsa's keys.get_public_key function to calculate the public point corresponding to the private key
+    public_point = keys.get_public_key(private_key_int, curve.P256)
+    
+    # Determine the prefix for the compressed public key ('02' for even y-coordinates and '03' for odd)
+    prefix = '02' if public_point.y % 2 == 0 else '03'
+    
+    # Create the compressed public key by concatenating the prefix and the x-coordinate in hexadecimal format
+    compressed_public_key = prefix + format(public_point.x, '064x')
+    
+    # Return the public point and its compressed representation
+    return public_point, compressed_public_key
+
+
+
+def import_private_key_and_get_address(private_key_hex, filename):
+    """
+    Import a private key, generate the corresponding address, and save it in a JSON file.
+
+    Parameters:
+        private_key_hex (str): The private key in hexadecimal format.
+        filename (str): The filename for the JSON file to save the data.
+
+    Returns:
+        str: The corresponding public address.
+    """
+    # Convert the private key to a public key
+    public_point, compressed_public_key = private_to_public_key_fastecdsa(private_key_hex)
+
+    # Get the address from the public key point
+    address = point_to_string(public_point, AddressFormat.COMPRESSED)
+
+    # Prepare the data to be saved
+    wallet_data = {
+        "private_key": private_key_hex,
+        "public_key": compressed_public_key,
+        "address": address
+    }
+
+    # Ensure the wallet directories exist
+    ensure_wallet_directories_exist()
+
+    # Normalize filename
+    normalized_filename = get_normalized_filepath(filename)
+
+    # Load existing data or initialize new data structure
+    data, wallet_exists = _load_data(normalized_filename, new_wallet=True)
+    if not wallet_exists:
+        data = {
+            "wallet_data": {
+                "wallet_type": "imported",
+                "version": "0.2.2",
+                "entry_data": {
+                    "entries": []
+                }
+            }
+        }
+
+    # Prepare unencrypted data to be saved
+    unencrypted_data_entry = generate_unencrypted_wallet_data(wallet_data, data)
+    data["wallet_data"]["entry_data"]["entries"].append(unencrypted_data_entry)
+
+    # Save the updated wallet data back to the file
+    _save_data(normalized_filename, data)
+
+    return address
+
+
+
+def point_to_string(point: Point, address_format: AddressFormat = AddressFormat.COMPRESSED) -> str:
+    """
+    Convert an ECDSA point to its string representation.
+    
+    Parameters:
+        point (Point): ECDSA point to convert.
+        address_format (AddressFormat, optional): The format to use for the conversion. Defaults to AddressFormat.COMPRESSED.
+        
+    Returns:
+        str: String representation of the point.
+    """
+    x, y = point.x, point.y  # Extract x and y coordinates from the point
+    # For full hexadecimal format
+    if address_format is AddressFormat.FULL_HEX:
+        point_bytes = point_to_bytes(point)  # Convert point to bytes
+        result = point_bytes.hex()  # Convert bytes to hexadecimal string
+        return result
+    # For compressed format
+    elif address_format is AddressFormat.COMPRESSED:
+        # Convert point to Base58 string
+        address = base58.b58encode((42 if y % 2 == 0 else 43).to_bytes(1, ENDIAN) + x.to_bytes(32, ENDIAN))
+        result = address if isinstance(address, str) else address.decode('utf-8')  # Ensure the result is a string
+        return result
+    else:
+        # Unsupported format
+        raise NotImplementedError()
+
+
 
 def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=[], pretty=False):
     """Overview:
@@ -1136,6 +1279,10 @@ def remove_duplicates_from_address_filter(address_list):
                 
     return deduplicated_list
 
+def _save_data(filename, data):
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+
 # Main Function
 def main():
     # Verbose parser for shared arguments
@@ -1148,6 +1295,17 @@ def main():
 
     # Subparser for generating a new wallet
     parser_generatewallet = subparsers.add_parser('generatewallet', parents=[verbose_parser])
+    # Subparser for importing a private key
+    parser_importkey = subparsers.add_parser('importkey', parents=[verbose_parser])
+    parser_importkey.add_argument('-privatekey', required=True, help="Specify the private key in hexadecimal format.")
+    #sub for showing imported shit
+    parser_showimportedkeys = subparsers.add_parser('showimportedkeys', parents=[verbose_parser])
+    parser_showimportedkeys.add_argument('-wallet', required=True, help="Specify the wallet filename.")
+    parser_showimportedkeys.add_argument('-password', required=True, help="Password for the wallet, if it is encrypted.")
+    parser_showimportedkeys.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
+
+    parser_importkey.add_argument('-wallet', required=True, help="Specify the wallet filename.")
+
 
     parser_generatewallet.add_argument('-wallet', required=True, help="Specify the wallet filename.")
     parser_generatewallet.add_argument('-encrypt', action='store_true', help="Encrypt the new wallet.")
@@ -1186,10 +1344,28 @@ def main():
         if address:
             print(f"\nSuccessfully generated new wallet. Address: {address}")
 
+    elif args.command == 'importkey':
+        address = import_private_key_and_get_address(args.privatekey, args.wallet)
+        if address:
+            print(f"\nCorresponding Address: {address}")
+
+
+    
     elif args.command == "generateaddress":
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False)    
         if address:
             print(f"\nSuccessfully generated address and stored wallet entry. Address: {address}")
+
+    elif args.command == 'showimportedkeys':
+        keys_info = show_imported_keys(filename=args.wallet, password=args.password, totp_code=args.tfacode)
+        print(f'\nImported Keys Information:\n{keys_info}')
+
+
+    elif args.command == 'importkey':
+         address = import_private_key_and_save(args.privatekey, args.wallet)
+         if address:
+             print(f"\nImported Private Key and Generated Address: {address}")
+
 
     elif args.command == 'decryptwallet':
         address, field, args.filter_subparser_pretty = process_decryptwallet_filter(args)
