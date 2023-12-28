@@ -158,6 +158,11 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
     ```bash
     python3 wallet_client.py generatewallet -wallet=wallet.json -deterministic -backup=True -disable-overwrite-warning -overwrite-password=MySecurePassword
     ```
+
+### Importing and Verifying wallets:
+<details>
+<summary>Expand:</summary>
+
 * Imports Privatekey Hex : 
     ```bash
     python3 wallet_client.py importkey -privatekey PK -wallet walletname
@@ -169,6 +174,8 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
     python3 wallet_client.py showimportedkeys -wallet wallet -password password
     ```
 </details>
+
+
 
 ### Address Generation:
 <details>
