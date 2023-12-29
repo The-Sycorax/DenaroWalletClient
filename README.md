@@ -276,7 +276,11 @@ python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePas
 </details>
 
 ------------
+## Donate:
 
+Denaro Address : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr
+
+ 
 ## Disclaimer:
 
 Neither The-Sycorax nor contributors of this project assume liability for any loss of funds incurred through the use of this software! This software is provided 'as is' under the [MIT License](LICENSE) without guarantees or warrenties of any kind, express or implied. It is strongly recommended that users back up their cryptographic keys. User are solely responsible for the security and management of their assets! The use of this software implies acceptance of all associated risks, including financial losses, with no liability on The-Sycorax or contributors of this project.
