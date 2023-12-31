@@ -1,8 +1,4 @@
 import qrcode
-from PIL import Image, ImageDraw
-from qrcode.image.styledpil import StyledPilImage
-from qrcode.image.styles.moduledrawers import CircleModuleDrawer
-from qrcode.image.styles.colormasks import SolidFillColorMask
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
@@ -16,7 +12,13 @@ import threading
 import select
 import sys
 import base64
-from cryptographic_util import VerificationUtils, DataManipulation
+import data_manipulation_util
+import verification_util
+
+from PIL import Image, ImageDraw
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.moduledrawers import CircleModuleDrawer
+from qrcode.image.styles.colormasks import SolidFillColorMask
 
 close_qr_window = False
 
@@ -86,7 +88,7 @@ class QRCodeUtils:
         qr_img.paste(logo_img, logo_pos, logo_img)  
         
         # Return the final QR code image with the logo
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not qr_img])
+        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not qr_img])
         return qr_img  
 
     @staticmethod
@@ -120,7 +122,7 @@ class QRCodeUtils:
             draw.line([(x, 0), (x, height)], tuple(blended_color))  
         
         # Return the image with gradient applied
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not image])
+        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not image])
         return image  
 
     @staticmethod
@@ -185,7 +187,7 @@ class QRCodeUtils:
                 # Capture window close event
                 if event.type == pygame.QUIT:  
                     pygame.quit()
-                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                    data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                     return
                 # Capture window resize event
                 elif event.type == pygame.VIDEORESIZE:  
@@ -248,7 +250,7 @@ class QRCodeUtils:
             pygame.display.flip()
 
         # Quit pygame when the countdown reaches zero or the window is closed
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         pygame.quit()
 
     @staticmethod
@@ -275,7 +277,7 @@ class QRCodeUtils:
                 line = (line + ' ' + words.pop(0)).strip()  
             lines.append(line)  
         # Return the wrapped lines
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not lines])
+        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not lines])
         return lines 
     
     def close_qr_window(value):
@@ -330,7 +332,7 @@ class UserPrompts:
                 password_confirm = password_input
             # Check if the passwords match
             if password_input == password_confirm:
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not password_input])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not password_input])
                 return password_input
             else:
                 print("Passwords do not match. Please try again.\n")
@@ -478,17 +480,17 @@ class UserPrompts:
             # Construct the backup filename
             base_filename = os.path.basename(filename)
             backup_name, _ = os.path.splitext(base_filename)
-            backup_path = os.path.join("./wallets/wallet_backups", f"{backup_name}_backup_{datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d_%H-%M-%S_%p')}") + ".json"
+            backup_path = os.path.join("./wallets/wallet_backups", f"{backup_name}_backup_{datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d_%H-%M-%S')}") + ".json"
             try:
                 # Create the backup
                 shutil.copy(filename, backup_path)
                 print(f"Backup created at {backup_path}")
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return True
 
             except Exception as e:
                 logging.error(f" Could not create backup: {e}\n")
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return
         else:            
             if not disable_warning:
@@ -512,15 +514,15 @@ class UserPrompts:
                 if password and encrypt:
                     print("Overwrite password provided.")
                     # Verify the password and HMAC to prevent brute force
-                    password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                    password_verified, hmac_verified, _ = verification_util.Verification.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
                     
                     # Based on password verification, update or reset the number of failed attempts
-                    data = DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
-                    DataManipulation._save_data(filename,data)
+                    data = data_manipulation_util.DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                    data_manipulation_util.DataManipulation._save_data(filename,data)
                     
                     # Check if there is still wallet data verify the password and HMAC again
                     if data:
-                        password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                        password_verified, hmac_verified, _ = verification_util.Verification.verify_password_and_hmac(data, password, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
                     # Handle error if the password and HMAC verification failed
                     if not (password_verified and hmac_verified):
                         logging.error("Authentication failed or wallet data is corrupted.")
@@ -532,15 +534,15 @@ class UserPrompts:
                         # Prompt user for password
                         password_input = UserPrompts.get_password(password=password if password and (password_verified and hmac_verified) else None)
                         # Verify the password and HMAC
-                        password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                        password_verified, hmac_verified, _ = verification_util.Verification.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
     
                         # Based on password verification, update or reset the number of failed attempts
-                        data = DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
-                        DataManipulation._save_data(filename,data)
+                        data = data_manipulation_util.DataManipulation.update_or_reset_attempts(data, filename, base64.b64decode(data["wallet_data"]["hmac_salt"]), password_verified, deterministic)
+                        data_manipulation_util.DataManipulation._save_data(filename,data)
                         
                         # If wallet data has not erased yet verify the password and HMAC again
                         if data:
-                            password_verified, hmac_verified, _ = VerificationUtils.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
+                            password_verified, hmac_verified, _ = verification_util.Verification.verify_password_and_hmac(data, password_input, base64.b64decode(data["wallet_data"]["hmac_salt"]), base64.b64decode(data["wallet_data"]["verification_salt"]), deterministic)
                         
                         # Handle error if the password and HMAC verification failed
                         if data and not (password_verified and hmac_verified):
@@ -559,26 +561,26 @@ class UserPrompts:
                     print()
                     # Call wait_for_input and allow up to 5 seconds for the user to cancel overwrite operation
                     if not UserPrompts.wait_for_input(timeout=5):
-                        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                         return
                     # If no input is recieved within 5 seconds then continue
                     else:
                         print()
                         try:
                             # Overwrite wallet with empty data
-                            DataManipulation.delete_wallet(filename, data)
+                            data_manipulation_util.DataManipulation.delete_wallet(filename, data)
                             print("Wallet data has been erased.")
                             time.sleep(0.5)
                         except Exception as e:
-                            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                            data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                             return
-                        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                         return True
                 else:
-                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                    data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                     return True
             else:
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return
     
     @staticmethod
@@ -600,11 +602,11 @@ class UserPrompts:
             # Check if a TOTP code was already provided
             if not totp_code:
                 # Get TOTP code from user input
-                totp_code = input("Please enter the Two-Factor Authentication code from your autthenticator app (or type '/q' to exit the script): ")
+                totp_code = input("Please enter the Two-Factor Authentication code from your authenticator app (or type '/q' to exit the script): ")
                 # Exit if the user chooses to quit
                 if totp_code.lower() == '/q':
                     logging.info("User exited before providing a valid Two-Factor Authentication code.\n")
-                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                    data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                     return False
                 # Check if the totp_code is provided
                 if not totp_code:
@@ -622,12 +624,12 @@ class UserPrompts:
                     totp_code = None
                     continue
             # Validate the TOTP code using utility method
-            if VerificationUtils.validate_totp_code(data, totp_code):
+            if verification_util.Verification.validate_totp_code(data, totp_code):
                 result = {"valid": True, "totp_secret": data}
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
                 return result
             else:
                 logging.error("Authentication failed. Please try again.\n")
                 # Reset TOTP code and continue the loop
                 totp_code = None
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])

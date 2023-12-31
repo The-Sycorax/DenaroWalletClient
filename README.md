@@ -38,6 +38,8 @@ deactivate
 The wallet client provides a CLI for managing and decrypting wallet data. 
 The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and `decryptwallet`) and their corresponding options.
 
+*Note: To ensure a high level of security, this wallet client is designed with an auto-delete feature for encrypted wallets. After 10 unsuccessful password attempts, the wallet will be automatically deleted in order to protect its contents and safeguard against unauthorized access. (For more details, please refer to: [feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*
+
 ### Sub-Commands:
 <dl><dd>
 
@@ -255,6 +257,12 @@ python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePas
 </dd>
 </dl>
 </details>
+
+------------
+
+## Disclaimer:
+
+Neither The-Sycorax nor contributors of this project assume liability for any loss of funds incurred through the use of this software! This software is provided 'as is' under the [MIT License](LICENSE) without guarantees or warrenties of any kind, express or implied. It is strongly recommended that users back up their cryptographic keys. User are solely responsible for the security and management of their assets! The use of this software implies acceptance of all associated risks, including financial losses, with no liability on The-Sycorax or contributors of this project.
 
 ------------
 
