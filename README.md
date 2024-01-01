@@ -2,6 +2,7 @@
 
 
 
+![Screenshot from 2024-01-01 15-17-32](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/d2f405d5-3863-4d07-afd8-a949ed65e282)
 
 
 
