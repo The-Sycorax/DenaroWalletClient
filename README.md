@@ -23,7 +23,7 @@ it can create a transaction from the wallet address to any other denaro address
 
 sending a transaction is self explanatory
 
-now casino people can handle their casino wallets in denaro wallet too. enjoy
+now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
 Donations : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr
 
