@@ -20,7 +20,7 @@ pip install virtualenv
 sudo apt install python3-venv
 # Create the virtual environment
 python3 -m venv env
-# Activate the virtual environment
+# Activate the virtual environment. Should be executed every time that there is new terminal session.
 source env/bin/activate
 
 # Install the required packages
@@ -32,7 +32,7 @@ To Deactivate the Python Virtual Environment use:
 deactivate
 ```
 ------------
-## Usage
+## Usage Documentation:
 ### Command-Line Interface:
 
 The wallet client provides a CLI for managing and decrypting wallet data. 
@@ -77,6 +77,8 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
 * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
   
 * `-password`: Password used for encryption and/or deterministic address generation of the specified wallet.
+
+* `-amount`: Specifies the amount of addresses to generate (Maximum of 256).
 </dd></dl>
 
 ---
@@ -118,10 +120,93 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
         ```bash
         -field=id,mnemonic,private_key,public_key,address
         ```
+
+* `-show`: Filters wallet entries based on origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries
   
 * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
 
+---
+
+#### `send`:
+**Overview**: The `send` sub-command is used to initiate a transaction in the Denaro blockchain network. This sub-command allows users to send Denaro to a specified address. 
+
+*Note: The source of funds for the transaction (the sender) can be specified in two ways: either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.*
+
+<dl><dd>
+
+- **General Syntax**:
+    ```bash
+    send -amount <amount> from [-wallet <wallet_filename>] [-password <password>] [-2fa-code <tfacode>] [-address <sender_address>] [-private-key <private_key>] to <receiver_address> [-message <message>]
+    ```
+
+- **Options**:
+    - `send`: Main command to initiate a transaction.
+        - `-amount`: Specifies the amount of Denaro to be sent (Required).
+
+    - `from <options>`: Specifies the sender's details.
+        - `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+        - `-password`: The password for the specified wallet. Required for wallets that are encrypted.
+        - `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
+        - `-address`: The address from which Denaro will be sent.            
+        
+        - `-private-key`: Specifies the private key associated with the sender address. Not required if specifying an address from a wallet file.    
+    
+    - `to <options>`: Specifies the receiver's details.
+        - `receiver`: (Required) The receiving address.            
+        
+        - `-message`: Optional transaction message.
+</dd></dl>
+
+---
+
+#### `balance`:
+**Overview**: The `balance` sub-command is used to check the balance of addresses in the Denaro blockchain that are asociated with a specified wallet file. 
+
+*Note: Similar to `decryptwallet filter`, the `balance` sub-command also has a way to filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Addresses can also be filtered based on origin (See `-show` option for more details).*
+
+<dl><dd>
+
+- **General Syntax**:
+    ```bash
+    balance -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>] [-address <address>] [-json] [-to-file] [-show <generated/imported>]
+    ```
+
+- **Options**:
+    * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+    * `-password`: The password for the specified wallet. Required for wallets that are encrypted.
+    * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
+    * `-address`: Specifies one or more addresses to get the balance of. Adding a hyphen `-` to the beginning of an address will exclude it.
+        * The format is: 
+            ```bash
+            -address=ADDRESS_1,-ADDRESS_2,...
+            ```
+    * `-json`: Prints the balance information in JSON format.
+    * `-to-file`: Saves the output of the balance information to a file. The resulting file will be in JSON format and named as "*[WalletName]​_balance_[Timestamp].json*" and stored in "*/[WalletDirectory]/balance_information/[WalletName]/*".
+    
+    * `-show`: Filters balance information based on wallet entry origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
+</dl></dd>
+
+---
+
+#### `import`:
+**Overview**: The `import` sub-command is designed to import a wallet entry into a specified wallet file using the private key of a Denaro address.
+<dl><dd>
+
+- **General Syntax**:
+    ```bash
+    import -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>] -private-key <private_key>
+    ```
+
+* **Options**:
+    * `-wallet`: (Required) Specifies the filename of the wallet file where the imported entries will be added. Defaults to the `./wallets/` directory if no specific filepath is provided.    
+    * `-password`: The password for the specified wallet. Required for wallets that are encrypted.    
+    * `-2fa-code=<tfacode>`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
+    
+    * `-private-key`: Specifies the private key of a Denaro address. Used to generate the corresponding entry data which will be imported into a wallet file.
+
+
+</dl></dd>
 </dl></dd>
 
 ------------
@@ -197,7 +282,7 @@ mnemonic, private_key, public_key, and address).*
 * *Various filtering combinations can be used.*
 </details>
 <details>
-<summary>Filter Examples:</summary>
+<summary>Filtering Examples:</summary>
 
 <dl>
 <dd>
@@ -256,6 +341,98 @@ python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePas
 </details>
 </dd>
 </dl>
+</details>
+
+### Making a Transaction:
+<details>
+<summary>Expand:</summary>
+
+* Sends 100 Denaro to a recipient using an address associated with a wallet:
+    
+    *Note: If a wallet is encrypted, be sure to specify the password for it.*
+
+    ```bash
+    python3 wallet_client.py send -amount=100 from -wallet=wallet.json -address=DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4 to DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
+    ```
+* Sends 100 Denaro to a recipient using the priate key associated with a Denaro address:
+    
+    *Note: Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it.*
+    ```bash
+    python3 wallet_client.py send -amount=100 from -private-key=43c718efb31e0fef4c94cbd182e3409f54da0a8eab8d9713f5b6b616cddbf4cf to DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
+    ```
+</details>
+
+### Checking Balances:
+<details>
+<summary>Basic Examples:</summary>
+
+*Note: If a wallet is encrypted, be sure to specify the password for it.*
+* Retrieves the balance information of all wallet entries:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json
+    ```
+* Prints the balance information of wallet entries in json format:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -json
+    ```
+* Saves the json output of balance information of wallet entries to a file:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -to-file
+    ```
+</details>
+
+<details>
+<summary>Filtering Examples:</summary>
+    
+As mentioned in the usage documentation, the `balance` sub-command has a way to filter wallet entries similar to `decryptwallet filter`. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Addresses can also be filtered based on origin (See `-show` option for more details).
+
+Many filter combinations can be used. Below are just a few examples but for more information please refer to the "Wallet Decryption with Filtering" section.
+
+*Note: If a wallet is encrypted, be sure to specify the password for it.*
+
+* Will only retrieve the balance information of imported wallet entries:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -show=imported
+    ```
+* Will only retrieve the balance information of generated wallet entries:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -show=generated
+    ```
+* Retrieves the balance information of a specific address associated with a wallet:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -address=DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4
+    ```
+
+* Retrieves the balance information of multiple addresses associated with a wallet:
+    
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -address=DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
+    ```
+    
+* Retrieves the balance information of all wallet entries but excludes specific addresses:
+
+    ```bash
+    python3 wallet_client.py balance -wallet=wallet.json -address=-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
+    ```
+</details>
+
+### Importing a Wallet Entry:
+<details>
+<summary>Expand:</summary>
+
+*Note: If a wallet is encrypted, be sure to specify the password for it.*
+
+* Imports a wallet entry based on the private key of a Denaro address:
+    
+    ```bash
+    python3 wallet_client.py import -wallet=wallet.json -private-key=43c718efb31e0fef4c94cbd182e3409f54da0a8eab8d9713f5b6b616cddbf4cf
+    ```
 </details>
 
 ------------
