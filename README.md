@@ -2,9 +2,8 @@
 
 RUN : UI.py
 
+![Screenshot from 2023-12-02 00-16-58](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/1c2858a2-b649-4760-b829-2323a24afaa3)
 
-
-![Screenshot from 2024-01-01 15-17-32](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/d2f405d5-3863-4d07-afd8-a949ed65e282)
 
 1 press load wallets and select your wallet (should be detected)
 2 press display addresses
