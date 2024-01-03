@@ -1,4 +1,4 @@
-# NEW #  Denaro Core V1.0.0 GUI #
+# NEW #  Denaro Core V1.0.0, DenaroWalletClient GUI #
 
 RUN : UI.py
 
