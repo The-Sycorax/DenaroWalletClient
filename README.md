@@ -3,7 +3,7 @@
 RUN : UI.py
 
 
-![Screenshot from 2024-01-03 17-37-04](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/84dbd40d-3afe-4185-a938-0e43cda0dc68)
+![Screenshot from 2024-01-03 17-43-34](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/7103e644-77ae-44a4-bdf7-60078c2eea08)
 
 
 
