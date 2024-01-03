@@ -13,19 +13,8 @@ RUN : UI.py
 3 press twice to open and close generate wallet frame and send frame
 
 
-![Screenshot from 2024-01-01 15-20-33](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/409a9d4e-93a0-4109-be0e-3cf10d2049c4)
 
-
-A simple GUI made to help loading and creating transactions using your wallets , so far it's still not 100% ready this is just a model
-it can load wallets with 1 address and list the address and it's balance 
-it can create a transaction from the wallet address to any other denaro address
-
-
-
-![Screenshot from 2024-01-01 15-22-24](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/482e4464-df8e-4bf6-8a63-60e95a6e4f3b)
-
-
-sending a transaction is self explanatory
+i hope all is self explanatory let me know if there is any questions
 
 now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
