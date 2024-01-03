@@ -2,12 +2,15 @@
 
 RUN : UI.py
 
-![Screenshot from 2023-12-02 00-16-58](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/1c2858a2-b649-4760-b829-2323a24afaa3)
+
+![Screenshot from 2024-01-03 17-37-04](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/84dbd40d-3afe-4185-a938-0e43cda0dc68)
+
 
 
 1 press load wallets and select your wallet (should be detected)
 2 press display addresses
 3 press refresh balance
+3 press twice to open and close generate wallet frame and send frame
 
 
 ![Screenshot from 2024-01-01 15-20-33](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/409a9d4e-93a0-4109-be0e-3cf10d2049c4)
