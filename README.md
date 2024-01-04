@@ -107,6 +107,7 @@ deactivate
         
         #### `decryptwallet`
         **Overview**: The `decryptwallet` sub-command can either decrypt all entries in a wallet file, or selectivly decrypt specific entries based on a provided filter, and return the decrypted data back to the console.        
+        
         *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.*
 
         <details>
@@ -319,7 +320,8 @@ deactivate
     - ### Wallet Decryption:
         <details>
         <summary>Expand</summary>
-        *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.
+        
+        *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.*
 
         * Decrypts an entire wallet:
             ```bash
