@@ -373,16 +373,15 @@ deactivate
         <details>
         <summary>Expand</summary>
         
-        * Sends 100 Denaro to a recipient using an address associated with a wallet:
-            
-            *Note: If a wallet is encrypted, be sure to specify the password for it.*
-        
+        *Note: If a wallet is encrypted, be sure to specify the password for it.*
+        * Sends 100 Denaro to a recipient using an address associated with a wallet:        
             ```bash
             python3 wallet_client.py send -amount=100 from -wallet=wallet.json -address=DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4 to DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
             ```
         * Sends 100 Denaro to a recipient using the priate key associated with a Denaro address:
             
-            *Note: Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it.*
+            *Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it. The private in this example was randomly generated and dose not have funds.*
+
             ```bash
             python3 wallet_client.py send -amount=100 from -private-key=43c718efb31e0fef4c94cbd182e3409f54da0a8eab8d9713f5b6b616cddbf4cf to DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
             ```
@@ -453,6 +452,8 @@ deactivate
         <summary>Expand</summary>
         
         *Note: If a wallet is encrypted, be sure to specify the password for it.*
+        
+        *Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it. The private in this example was randomly generated and dose not have funds.*
         
         * Imports a wallet entry based on the private key of a Denaro address:
             
