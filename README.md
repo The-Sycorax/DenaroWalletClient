@@ -62,7 +62,7 @@ deactivate
         - **Options**:    
             *Note: The `-password` option must be set for encrypted and/or deterministic wallets.*
         
-            * `-wallet`: (Required) Specifies the wallet filename.  
+            * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.  
             * `-encrypt`: Enables encryption for new wallets.  
             * `-2fa`: Enables 2-Factor Authentication for new encrypted wallets.    
             * `-deterministic`: Enables deterministic address generation for new wallets.
@@ -93,9 +93,9 @@ deactivate
         - **Options**:
             *Note: The `-password` option must be set for encrypted and/or deterministic wallets.*
         
-            * `-wallet`: (Required) Specifies the wallet filename.  
-            * `-password`: Password used for encryption and/or deterministic address generation of the specified wallet.
-            * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
+            * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+            * `-password`: The password of the specified wallet. Required for encrypted and/or deterministic wallets.  
+            * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
             * `-amount`: Specifies the amount of addresses to generate (Maximum of 256).
             
             * `-verbose`: Enables verbose logging of info and debug messages.
@@ -120,9 +120,9 @@ deactivate
         - **Options**:
             *Note: The `-password` option must be set for encrypted wallets.*
             
-            * `-wallet`: (Required) Specifies the wallet filename.
-            * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).  
-            * `-password`: Password used for decryption of the specified wallet.
+            * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+            * `-password`: The password of the specified wallet. Required for wallets that are encrypted.
+            * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.  
             * `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen `-` to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. *To be removed*.
               * The format is: 
                 ```bash 
@@ -188,7 +188,7 @@ deactivate
         
             * `from <options>`: Specifies the sender's details.
                 * `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
-                * `-password`: The password for the specified wallet. Required for wallets that are encrypted.
+                * `-password`: The password of the specified wallet. Required for wallets that are encrypted.
                 * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
                 * `-address`: The address from which Denaro will be sent.
                 
@@ -222,7 +222,7 @@ deactivate
         
         - **Options**:
             * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
-            * `-password`: The password for the specified wallet. Required for wallets that are encrypted.
+            * `-password`: The password of the specified wallet. Required for wallets that are encrypted.
             * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
             * `-address`: Specifies one or more addresses to get the balance of. Adding a hyphen `-` to the beginning of an address will exclude it.
                 * The format is: 
@@ -254,7 +254,7 @@ deactivate
         
         - **Options**:
             * `-wallet`: (Required) Specifies the filename of the wallet file where the imported entries will be added. Defaults to the `./wallets/` directory if no specific filepath is provided.    
-            * `-password`: The password for the specified wallet. Required for wallets that are encrypted.    
+            * `-password`: The password of the specified wallet. Required for wallets that are encrypted.    
             * `-2fa-code=<tfacode>`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
             
             * `-private-key`: Specifies the private key of a Denaro address. Used to generate the corresponding entry data which will be imported into a wallet file.
