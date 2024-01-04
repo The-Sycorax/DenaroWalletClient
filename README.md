@@ -79,7 +79,7 @@ deactivate
         ---
         
         #### `generateaddress`
-        **Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (id, mnemonic, private_key, public_key, and address).
+        **Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (e.g. private_key, public_key, and address).
 
         <details>
         <summary>Usage:</summary>
@@ -106,7 +106,8 @@ deactivate
         ---
         
         #### `decryptwallet`
-        **Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below), and return the data back to the console.
+        **Overview**: The `decryptwallet` sub-command can either decrypt all entries in a wallet file, or selectivly decrypt specific entries based on a provided filter, and return the decrypted data back to the console.        
+        *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.*
 
         <details>
         <summary>Usage:</summary>  
@@ -137,7 +138,7 @@ deactivate
         ---
         
         #### `decryptwallet filter`
-        **Overview**: The `decryptwallet filter` sub-command is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
+        **Overview**: The `decryptwallet filter` sub-command is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This sub-command should come directly after the other options that have been provided for `decryptwallet`. Wallet entries can also be filtered based on origin (See `-show` option for more details).
         
         <details>
         <summary>Usage:</summary> 
@@ -209,7 +210,7 @@ deactivate
         #### `balance`
         **Overview**: The `balance` sub-command is used to check the balance of addresses in the Denaro blockchain that are asociated with a specified wallet file. 
         
-        *Note: Similar to `decryptwallet filter`, the `balance` sub-command also has a way to filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Addresses can also be filtered based on origin (See `-show` option for more details).*
+        *Note: Similar to `decryptwallet filter`, the `balance` sub-command also has a way to filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Wallet entries can also be filtered based on origin (See `-show` option for more details).*
         
         <details>
         <summary>Usage:</summary> 
@@ -318,7 +319,8 @@ deactivate
     - ### Wallet Decryption:
         <details>
         <summary>Expand</summary>
-        
+        *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.
+
         * Decrypts an entire wallet:
             ```bash
             python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword
