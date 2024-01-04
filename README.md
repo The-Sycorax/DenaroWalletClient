@@ -36,7 +36,7 @@ deactivate
 ### Command-Line Interface:
 
 The wallet client provides a CLI for managing and decrypting wallet data. 
-The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and `decryptwallet`) and their corresponding options.
+The CLI supports various sub-commands and their corresponding options.
 
 *Note: To ensure a high level of security, this wallet client is designed with an auto-delete feature for encrypted wallets. After 10 unsuccessful password attempts, the wallet will be automatically deleted in order to protect its contents and safeguard against unauthorized access. (For more details, please refer to: [feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*
 
@@ -148,7 +148,7 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
         - `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
         - `-password`: The password for the specified wallet. Required for wallets that are encrypted.
         - `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
-        - `-address`: The address from which Denaro will be sent.            
+        - `-address`: The address from which Denaro will be sent.
         
         - `-private-key`: Specifies the private key associated with the sender address. Not required if specifying an address from a wallet file.    
     
@@ -156,6 +156,8 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
         - `receiver`: (Required) The receiving address.            
         
         - `-message`: Optional transaction message.
+
+    - `-node`: Specifies the Denaro node to connect to. If not specified the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/). Must be a valid IP Address or URL.
 </dd></dl>
 
 ---
@@ -182,9 +184,10 @@ The CLI supports various sub-commands (`generatewallet`, `generateaddress`, and 
             -address=ADDRESS_1,-ADDRESS_2,...
             ```
     * `-json`: Prints the balance information in JSON format.
-    * `-to-file`: Saves the output of the balance information to a file. The resulting file will be in JSON format and named as "*[WalletName]​_balance_[Timestamp].json*" and stored in "*/[WalletDirectory]/balance_information/[WalletName]/*".
-    
+    * `-to-file`: Saves the output of the balance information to a file. The resulting file will be in JSON format and named as "*[WalletName]​_balance_[Timestamp].json*" and stored in "*/[WalletDirectory]/balance_information/[WalletName]/*".    
     * `-show`: Filters balance information based on wallet entry origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
+    
+    * `-node`: Specifies the Denaro node to connect to. If not specified the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/). Must be a valid IP Address or URL.
 </dl></dd>
 
 ---
