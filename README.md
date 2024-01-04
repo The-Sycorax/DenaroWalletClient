@@ -37,13 +37,15 @@ deactivate
 ## Usage Documentation:
 ### Command-Line Interface:
 
-<details>
-<summary>Expand</summary>
+
 
 The wallet client provides a CLI for managing and decrypting wallet data. 
 The CLI supports various sub-commands and their corresponding options.
 
 *Note: To ensure a high level of security, this wallet client is designed with an auto-delete feature for encrypted wallets. After 10 unsuccessful password attempts, the wallet will be automatically deleted in order to protect its contents and safeguard against unauthorized access. (For more details, please refer to: [feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*
+
+<details>
+<summary>Expand</summary>
 
 ### Sub-Commands:
 <dl><dd>
