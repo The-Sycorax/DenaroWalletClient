@@ -37,19 +37,21 @@ deactivate
 ## Usage Documentation:
 - ### Command-Line Interface:
 
-    The wallet client provides a CLI for managing and decrypting wallet data. 
-    The CLI supports various sub-commands and their corresponding options.
+    **Overview**: The wallet client provides a rebust CLI for operting the Denaro Wallet Client. 
+    The CLI supports various sub-commands along with their corresponding options.
     
-    *Note: To ensure a high level of security, this wallet client is designed with an auto-delete feature for encrypted wallets. After 10 unsuccessful password attempts, the wallet will be automatically deleted in order to protect its contents and safeguard against unauthorized access. (For more details, please refer to: [feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*
+    *Note: To ensure a high level of security, this wallet client is designed with an auto-delete feature for encrypted wallets. After 10 unsuccessful password attempts, the wallet will be automatically deleted in order to protect its contents and safeguard against unauthorized access. (For more details, please refer to: [feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*    
     
-    <details>
-    <summary>Expand</summary>
-    
-    - ### Sub-Commands:
+    - ### Sub-Commands:   
+        <details>
+        <summary>Expand</summary>
         <dl><dd>
         
-        #### `generatewallet`:
+        #### `generatewallet`
         **Overview**: The `generatewallet` sub-command is used to generate new wallet files or overwrite existing ones. It will also generate an address for the wallet.
+                
+        <details>
+        <summary>Usage:</summary>
         <dl><dd>
         
         - **Syntax**:
@@ -70,12 +72,17 @@ deactivate
             * `-overwrite-password`: Used to bypass the password confirmation prompt when overwriteing a wallet that is encrypted. A string paramter is required, and should specify the password used for the encrypted wallet.
             
             * `-verbose`: Enables verbose logging of info and debug messages.
+        
         </dd></dl>
+        </details>
         
         ---
         
-        #### `generateaddress`:
+        #### `generateaddress`
         **Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (id, mnemonic, private_key, public_key, and address).
+
+        <details>
+        <summary>Usage:</summary>
         <dl><dd>
         
         - **Syntax**:
@@ -92,12 +99,17 @@ deactivate
             * `-amount`: Specifies the amount of addresses to generate (Maximum of 256).
             
             * `-verbose`: Enables verbose logging of info and debug messages.
-        </dd></dl>
         
+        </dd></dl>
+        </details>
+
         ---
         
-        #### `decryptwallet`:
-        **Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below), and return the data back to the console.  
+        #### `decryptwallet`
+        **Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below), and return the data back to the console.
+
+        <details>
+        <summary>Usage:</summary>  
         <dl><dd>
         
         - **Syntax**:
@@ -118,12 +130,17 @@ deactivate
                 ```
             
             * `-pretty`: Print formatted JSON output for better readability.
+        
         </dd></dl>
+        </details>
         
         ---
         
-        #### `decryptwallet filter`:
-        **Overview**: `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
+        #### `decryptwallet filter`
+        **Overview**: The `decryptwallet filter` sub-command is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
+        
+        <details>
+        <summary>Usage:</summary> 
         <dl><dd>
         
         - **Syntax**:
@@ -145,15 +162,19 @@ deactivate
             * `-show`: Filters wallet entries based on origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
               
             * `-pretty`: Print formatted JSON output for better readability.
-        </dd></dl>
         
+        </dd></dl>
+        </details>
+
         ---
         
-        #### `send`:
+        #### `send`
         **Overview**: The `send` sub-command is used to initiate a transaction in the Denaro blockchain network. This sub-command allows users to send Denaro to a specified address. 
         
         *Note: The source of funds for the transaction (the sender) can be specified in two ways: either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.*
-        
+
+        <details>
+        <summary>Usage:</summary>         
         <dl><dd>
         
         - **Syntax**:
@@ -179,15 +200,19 @@ deactivate
                 * `-message`: Optional transaction message.
         
             * `-node`: Specifies the Denaro node to connect to. Must be a valid IP Address or URL. If not specified or the node is not valid, then the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/).
-        </dd></dl>
         
+        </dd></dl>
+        </details>
+
         ---
         
-        #### `balance`:
+        #### `balance`
         **Overview**: The `balance` sub-command is used to check the balance of addresses in the Denaro blockchain that are asociated with a specified wallet file. 
         
         *Note: Similar to `decryptwallet filter`, the `balance` sub-command also has a way to filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Addresses can also be filtered based on origin (See `-show` option for more details).*
         
+        <details>
+        <summary>Usage:</summary> 
         <dl><dd>
         
         - **Syntax**:
@@ -209,12 +234,17 @@ deactivate
             * `-show`: Filters balance information based on wallet entry origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
             
             * `-node`: Specifies the Denaro node to connect to. Must be a valid IP Address or URL. If not specified or the node is not valid, then the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/).
-        </dl></dd>
         
+        </dd></dl>
+        </details>
+
         ---
         
-        #### `import`:
+        #### `import`
         **Overview**: The `import` sub-command is designed to import a wallet entry into a specified wallet file using the private key of a Denaro address.
+
+        <details>
+        <summary>Usage:</summary> 
         <dl><dd>
         
         - **Syntax**:
@@ -222,17 +252,17 @@ deactivate
             import [-h] -private-key <private_key> -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>]
             ```
         
-        * **Options**:
+        - **Options**:
             * `-wallet`: (Required) Specifies the filename of the wallet file where the imported entries will be added. Defaults to the `./wallets/` directory if no specific filepath is provided.    
             * `-password`: The password for the specified wallet. Required for wallets that are encrypted.    
             * `-2fa-code=<tfacode>`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
             
             * `-private-key`: Specifies the private key of a Denaro address. Used to generate the corresponding entry data which will be imported into a wallet file.
-        
-        
-        </dl></dd>
-        </dl></dd>
-    </details>
+            
+        </dd></dl>
+        </details>
+        </dd></dl>
+        </details>        
 
 - ### Usage Examples:
     <details>
@@ -310,8 +340,7 @@ deactivate
         <details>
         <summary>Filtering Examples:</summary>
         
-        <dl>
-        <dd>
+        <dl><dd>
         To get an idea of how filtering works, below are a few examples.
         
         *Note: The following addresses are used only for these examples and you should use your own.*
@@ -365,8 +394,7 @@ deactivate
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
         ```
         </details>
-        </dd>
-        </dl>
+        </dd></dl>
         </details>
     
     - ### Making a Transaction:
