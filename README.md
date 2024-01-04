@@ -317,49 +317,49 @@ deactivate
         *Note: The following addresses are used only for these examples and you should use your own.*
         
         <details>
-        <summary>Retrieves all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4'.</summary>
+        <summary>Retrieves all of the data associated with the addess specified.</summary>
           
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
         ```
         </details>
         <details>
-        <summary>Excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' from the results, and will only retrieve the data associated with the rest of the wallet entries if any:</summary>
+        <summary>Excludes an address from the results, and will only retrieve the data associated with the rest of the wallet entries if any:</summary>
           
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4}"
         ```
         </details>
         <details>
-        <summary>Excludes 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'mnemonic' associated with the rest of the wallet entries if any:</summary>
+        <summary>Excludes an address from the results, and will retrieve only the 'mnemonic' associated with the rest of the wallet entries if any:</summary>
         
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=mnemonic
         ```
         </details>
         <details>
-        <summary>Retrieves all of the data associated for 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA':</summary>
+        <summary>Retrieves all of the data associated for the multiple addresses specified:</summary>
         
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA}"
         ```
         </details>
         <details>
-        <summary>Retrieves only the 'private_key' and 'public_key' associated with 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA':</summary>
+        <summary>Retrieves only the 'private_key' and 'public_key' associated with the multiple addresses specified:</summary>
           
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword -filter="address={DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA},field={private_key,public_key}"
         ```
         </details>
         <details>
-        <summary>Excludes 'DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4' and 'DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA' from the results, and will retrieve only the 'public_key' and `id` associated with the rest of the wallet entries if any:</summary>
+        <summary>Excludes the specified addresses from the results, and will retrieve only the 'public_key' and `id` associated with the rest of the wallet entries if any:</summary>
         
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -address=-DuxRWZXZSeuWGmjTJ99GH5Yj5ri4kVy55MGFAL74wZcW4,-DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA -field=public_key,id
         ```
         </details>
         <details>
-        <summary>Retrieve only the 'address' associated with all wallet entries:</summary>
+        <summary>Retrieves only the 'address' associated with all wallet entries:</summary>
           
         ```bash
         python3 wallet_client.py decryptwallet -wallet=wallet.json -password=MySecurePassword filter -field=address
