@@ -31,9 +31,14 @@ To Deactivate the Python Virtual Environment use:
 ```bash
 deactivate
 ```
+
 ------------
+
 ## Usage Documentation:
 ### Command-Line Interface:
+
+<details>
+<summary>Expand</summary>
 
 The wallet client provides a CLI for managing and decrypting wallet data. 
 The CLI supports various sub-commands and their corresponding options.
@@ -46,23 +51,25 @@ The CLI supports various sub-commands and their corresponding options.
 #### `generatewallet`:
 **Overview**: The `generatewallet` sub-command is used to generate new wallet files or overwrite existing ones. It will also generate an address for the wallet.
 <dl><dd>
+
+- **Syntax**:
+    ```bash
+    generatewallet [-h] [-verbose] -wallet <wallet_filename> [-encrypt] [-2fa] [-deterministic] [-password <password>] [-backup <True/False>] [-disable-overwrite-warning] [-overwrite-password <overwrite_password>]
+    ```
+
+- **Options**:    
+    *Note: The `-password` option must be set for encrypted and/or deterministic wallets.*
+
+    * `-wallet`: (Required) Specifies the wallet filename.  
+    * `-encrypt`: Enables encryption for new wallets.  
+    * `-2fa`: Enables 2-Factor Authentication for new encrypted wallets.    
+    * `-deterministic`: Enables deterministic address generation for new wallets.
+    * `-password`: Password used for wallet encryption and/or deterministic address generation.
+    * `-backup`: Disables wallet backup warning when attempting to overwrite an existing wallet. A 'True' or 'False' parameter is required, and will specify if the wallet should be backed up or not.  
+    * `-disable-overwrite-warning`: Disables overwrite warning if an existing wallet is not backed up.  
+    * `-overwrite-password`: Used to bypass the password confirmation prompt when overwriteing a wallet that is encrypted. A string paramter is required, and should specify the password used for the encrypted wallet.
     
-*Note: `-password` must be set for encrypted and/or deterministic wallets.*
-* `-wallet`: Specifies the wallet filename (Required).
-  
-* `-encrypt`: Enables encryption for new wallets.
-  
-* `-2fa`: Enables 2-Factor Authentication for new encrypted wallets.
-  
-* `-password`: Password used for wallet encryption and/or deterministic address generation.
-  
-* `-deterministic`: Enables deterministic address generation for new wallets.
-  
-* `-backup`: Disables wallet backup warning when attempting to overwrite an existing wallet. A 'True' or 'False' parameter is required, and will specify if the wallet should be backed up or not.
-  
-* `-disable-overwrite-warning`: Disables overwrite warning if an existing wallet is not backed up.
-  
-* `-overwrite-password`: Used to bypass the password confirmation prompt when overwriteing a wallet that is encrypted. A string paramter is required, and should specify the password used for the encrypted wallet.
+    * `-verbose`: Enables verbose logging of info and debug messages.
 </dd></dl>
 
 ---
@@ -71,14 +78,20 @@ The CLI supports various sub-commands and their corresponding options.
 **Overview**: The `genrateaddress` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (id, mnemonic, private_key, public_key, and address).
 <dl><dd>
 
-*Note: `-password` must be set if the wallet specified is encrypted and/or deterministic.*
-* `-wallet`: Specifies the wallet filename (Required).
-  
-* `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
-  
-* `-password`: Password used for encryption and/or deterministic address generation of the specified wallet.
+- **Syntax**:
+    ```bash
+    generateaddress [-h] [-verbose] -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>] [-amount <amount>]
+    ```
 
-* `-amount`: Specifies the amount of addresses to generate (Maximum of 256).
+- **Options**:
+    *Note: The `-password` option must be set for encrypted and/or deterministic wallets.*
+
+    * `-wallet`: (Required) Specifies the wallet filename.  
+    * `-password`: Password used for encryption and/or deterministic address generation of the specified wallet.
+    * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
+    * `-amount`: Specifies the amount of addresses to generate (Maximum of 256).
+    
+    * `-verbose`: Enables verbose logging of info and debug messages.
 </dd></dl>
 
 ---
@@ -87,20 +100,24 @@ The CLI supports various sub-commands and their corresponding options.
 **Overview**: The `decryptwallet` sub-command can either decrypt all wallet entries, or selectivly decrypt wallet entries based on a provided filter (See below), and return the data back to the console.  
 <dl><dd>
 
-*Note: `decryptwallet` will not work if a wallet is unencrypted.*
-* `-wallet`: Specifies the wallet filename (Required).
-  
-* `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).
-  
-* `-password`: Password used for decryption of the specified wallet (Required).
-  
-* `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen `-` to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. 
-  * The format is: 
-    ```bash 
-    -filter="address={ADDRESS_1,-ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"
+- **Syntax**:
+    ```bash
+    decryptwallet [-h] -wallet <wallet_filename> [-2fa-code tfacode] [-pretty] [-password <password>] [-filter <filter>] {filter} ...
     ```
 
-* `-pretty`: Print formatted JSON output for better readability.
+- **Options**:
+    *Note: The `-password` option must be set for encrypted wallets.*
+    
+    * `-wallet`: (Required) Specifies the wallet filename.
+    * `-2fa-code`: Two-Factor Authentication code for 2FA enabled wallets (Generated from an authenticator app).  
+    * `-password`: Password used for decryption of the specified wallet.
+    * `-filter`: Filter wallet entries by one or more address and/or field. Adding a hyphen `-` to the beginning of an address will exclude it. The filter string must be enclosed in quotation marks and parameter values must be enclosed in curly braces `{}`. *To be removed*.
+      * The format is: 
+        ```bash 
+        -filter="address={ADDRESS_1,-ADDRESS_2,...},field={id,mnemonic,private_key,public_key,address}"
+        ```
+    
+    * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
 
 ---
@@ -109,21 +126,25 @@ The CLI supports various sub-commands and their corresponding options.
 **Overview**: `decryptwallet filter` is basically the same as using `decryptwallet -filter` but in this case `-address` and `-field` are two separate options. This is a positional argument, and should come directly after the other options provided for `decryptwallet`.
 <dl><dd>
 
-* `-address`: One or more addresses to filter by. Adding a hyphen `-` to the beginning of an address will exclude it. 
-    * The format is: 
-        ```bash
-        fliter -address=ADDRESS_1,-ADDRESS_2,...
-        ```
-  
-* `-field`: One or more fields to filter by. 
-    * The format is: 
-        ```bash
-        -field=id,mnemonic,private_key,public_key,address
-        ```
+- **Syntax**:
+    ```bash
+    decryptwallet <options> filter [-h] [-address <address>] [-field <field>] [-show <generated/imported>][-pretty]
+    ```
 
-* `-show`: Filters wallet entries based on origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries
-  
-* `-pretty`: Print formatted JSON output for better readability.
+- **Options**:
+    * `-address`: One or more addresses to filter by. Adding a hyphen `-` to the beginning of an address will exclude it. 
+        * The format is: 
+            ```bash
+            fliter -address=ADDRESS_1,-ADDRESS_2,...
+            ```  
+    * `-field`: One or more fields to filter by. 
+        * The format is: 
+            ```bash
+            -field=id,mnemonic,private_key,public_key,address
+            ```
+    * `-show`: Filters wallet entries based on origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
+      
+    * `-pretty`: Print formatted JSON output for better readability.
 </dd></dl>
 
 ---
@@ -135,29 +156,29 @@ The CLI supports various sub-commands and their corresponding options.
 
 <dl><dd>
 
-- **General Syntax**:
+- **Syntax**:
     ```bash
-    send -amount <amount> from [-wallet <wallet_filename>] [-password <password>] [-2fa-code <tfacode>] [-address <sender_address>] [-private-key <private_key>] to <receiver_address> [-message <message>]
+    send [-h] [-node <node_url>] -amount <amount> from [-wallet <wallet_filename>] [-address <sender_address>] [-private-key <private_key>] [-password <password>] [-2fa-code <tfacode>] to <receiver_address> [-message <message>]
     ```
 
 - **Options**:
-    - `send`: Main command to initiate a transaction.
-        - `-amount`: Specifies the amount of Denaro to be sent (Required).
+    * `send`: Main command to initiate a transaction.
+        * `-amount`: (Required) Specifies the amount of Denaro to be sent.
 
-    - `from <options>`: Specifies the sender's details.
-        - `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
-        - `-password`: The password for the specified wallet. Required for wallets that are encrypted.
-        - `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
-        - `-address`: The address from which Denaro will be sent.
+    * `from <options>`: Specifies the sender's details.
+        * `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+        * `-password`: The password for the specified wallet. Required for wallets that are encrypted.
+        * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
+        * `-address`: The address from which Denaro will be sent.
         
-        - `-private-key`: Specifies the private key associated with the sender address. Not required if specifying an address from a wallet file.    
+        * `-private-key`: Specifies the private key associated with the sender address. Not required if specifying an address from a wallet file.    
     
-    - `to <options>`: Specifies the receiver's details.
-        - `receiver`: (Required) The receiving address.            
+    * `to <options>`: Specifies the receiver's details.
+        * `receiver`: (Required) The receiving address.            
         
-        - `-message`: Optional transaction message.
+        * `-message`: Optional transaction message.
 
-    - `-node`: Specifies the Denaro node to connect to. If not specified the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/). Must be a valid IP Address or URL.
+    * `-node`: Specifies the Denaro node to connect to. Must be a valid IP Address or URL. If not specified or the node is not valid, then the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/).
 </dd></dl>
 
 ---
@@ -169,7 +190,7 @@ The CLI supports various sub-commands and their corresponding options.
 
 <dl><dd>
 
-- **General Syntax**:
+- **Syntax**:
     ```bash
     balance -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>] [-address <address>] [-json] [-to-file] [-show <generated/imported>]
     ```
@@ -187,7 +208,7 @@ The CLI supports various sub-commands and their corresponding options.
     * `-to-file`: Saves the output of the balance information to a file. The resulting file will be in JSON format and named as "*[WalletName]​_balance_[Timestamp].json*" and stored in "*/[WalletDirectory]/balance_information/[WalletName]/*".    
     * `-show`: Filters balance information based on wallet entry origin. Use `-show generated` to retrieve balance of internally generated entries and `-show imported` for imported entries.
     
-    * `-node`: Specifies the Denaro node to connect to. If not specified the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/). Must be a valid IP Address or URL.
+    * `-node`: Specifies the Denaro node to connect to. Must be a valid IP Address or URL. If not specified or the node is not valid, then the wallet client will use the default Denaro node (https://denaro-node.gaetano.eu.org/).
 </dl></dd>
 
 ---
@@ -196,9 +217,9 @@ The CLI supports various sub-commands and their corresponding options.
 **Overview**: The `import` sub-command is designed to import a wallet entry into a specified wallet file using the private key of a Denaro address.
 <dl><dd>
 
-- **General Syntax**:
+- **Syntax**:
     ```bash
-    import -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>] -private-key <private_key>
+    import [-h] -private-key <private_key> -wallet <wallet_filename> [-password <password>] [-2fa-code <tfacode>]
     ```
 
 * **Options**:
@@ -211,10 +232,12 @@ The CLI supports various sub-commands and their corresponding options.
 
 </dl></dd>
 </dl></dd>
+</details>
 
-------------
+### Usage Examples:
 
-## Usage Examples:
+<details>
+<summary>Expand</summary>
 
 ### Generating New Wallets:
 <details>
@@ -436,6 +459,7 @@ Many filter combinations can be used. Below are just a few examples but for more
     ```bash
     python3 wallet_client.py import -wallet=wallet.json -private-key=43c718efb31e0fef4c94cbd182e3409f54da0a8eab8d9713f5b6b616cddbf4cf
     ```
+</details>
 </details>
 
 ------------
