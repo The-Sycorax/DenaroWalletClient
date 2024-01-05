@@ -3,14 +3,22 @@
 RUN : UI.py
 
 
-![Screenshot from 2024-01-03 17-43-34](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/7103e644-77ae-44a4-bdf7-60078c2eea08)
+![Screenshot from 2024-01-05 13-56-44](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/ff2a413a-ec02-4f5e-814d-8b8acd35b270)
 
 
+ON Wallet Operations
+ press load wallets and select your wallet (should be detected)
+ you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
+ON Generate Options
+ you can generate new wallets
+ you can generate new addresses for the current selected wallet , set amount.
+ON Wallet settings
+ you can import private keys in hexadecimal format to an existing wallet (one currently selected)
+ soon comes backup function
+ 
+(the encryption and password are soon to come, where you can only select an encrypted wallet after submitting the correct decryption password, and if wallet has 2fa enabled it would be asked when doing transactions or generating addresses depending on wallet_client improvements thanks to Sycorax)
 
-1 press load wallets and select your wallet (should be detected)
-2 press display addresses
-3 press refresh balance
-3 press twice to open and close generate wallet frame and send frame
+
 
 
 
