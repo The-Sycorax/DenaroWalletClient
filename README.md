@@ -1,7 +1,7 @@
 # Denaro Wallet Client
 
 ## Introduction
-**This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency.It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets.** 
+**This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency. It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets.** 
 
 **The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports. Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.**
 
@@ -15,6 +15,8 @@ Inherent to its architecture, the wallet client deeply inegrates and bakes these
 This encryption method is implemented in stages, beginning with the encryption of individual JSON key-value pairs of wallet data using the dual-layer technique. Following this, an additional encryption layer is applied to the entire JSON entry that contains these encrypted pairs, resulting in multiple layers of encryption. By implementing this multi-layered encryption approach along with the various security mechanisms, the wallet client not only secures wallet data but also substantially fortifies its underlying cryptographic keys against a variety threats.
 
 ## Installation Guide
+*Note: The Denaro Wallet Client has not been tested Windows or MacOS and support is unknown at this time. It is reccomended to use the wallet client on Linux to avoid any compatibility or stability issues.*
+
 ```bash
 # Clone the repository
 git clone https://github.com/The-Sycorax/DenaroWalletClient.git
