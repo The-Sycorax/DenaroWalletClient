@@ -72,23 +72,27 @@ def refresh_balance():
     selected_wallet_file = wallet_dropdown.get()
     if selected_wallet_file:
         wallet_name = selected_wallet_file.replace('.json', '')
-        # Fetch balance for the entire wallet
         result = subprocess.run(["python3", "wallet_client.py", "balance", "-wallet", wallet_name], capture_output=True, text=True)
         output = result.stdout.strip()
 
-        # Update balance in the address list
+        total_balance_value = 0  # Initialize total balance
+
+        # Update balance in the address list and calculate total balance
         for child in address_list.get_children():
-            address = address_list.item(child)["values"][0]  # Address is in the first column
+            address = address_list.item(child)["values"][0]
             balance_search = re.search(f"Address #\\d+: {address}\s+Balance: (.+?)\s", output)
             if balance_search:
                 balance = balance_search.group(1)
-                # Update the balance in the second column
-                address_list.item(child, values=(address, f"Balance: {balance}"))
+                address_list.item(child, values=(address, f"Balance: {balance} DNR"))
+                try:
+                    balance_amount = float(balance.replace(' DNR', ''))  # Assuming balance is in BTC
+                    total_balance_value += balance_amount
+                except ValueError:
+                    pass  # If the balance is not a valid number, ignore it
 
         # Update total balance
-        total_balance_search = re.search("Total Balance: (.+)", output)
-        if total_balance_search:
-            total_balance.set(f"Total Balance: {total_balance_search.group(1)}")
+        total_balance.set(f"Total Balance: {total_balance_value} DNR")  # Assuming balance is in BTC
+
 
 
 
@@ -290,6 +294,15 @@ def import_private_key(wallet_name, private_key):
 
 
 
+def on_treeview_select(event):
+    selected_items = address_list.selection()
+    if selected_items:  # Check if anything is selected
+        item = address_list.item(selected_items[0])  # Assuming single selection
+        address = item['values'][0]  # Get the address from the first column
+        root.clipboard_clear()  # Clear the clipboard
+        root.clipboard_append(address)  # Append the address to the clipboard
+        root.update()  # Now it stays on the clipboard after the window is closed
+        messagebox.showinfo("Info", f"Address {address} copied to clipboard.")
 
 
 
@@ -364,6 +377,7 @@ address_list = ttk.Treeview(tab1, columns=columns, show='headings')
 address_list.heading('Address', text='Address')
 address_list.heading('Balance', text='Balance')
 address_list.pack(side="left", fill="both", expand=True)
+address_list.bind('<<TreeviewSelect>>', on_treeview_select)
 
 # Add a scrollbar for the address list
 scrollbar = ttk.Scrollbar(tab1, orient=tk.VERTICAL, command=address_list.yview)
