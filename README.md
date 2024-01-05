@@ -1,3 +1,36 @@
+# NEW #  Denaro Core V1.0.0, DenaroWalletClient GUI #
+
+RUN : UI.py
+
+
+![Screenshot from 2024-01-05 15-45-45](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/4ba50451-32b2-4a00-a76a-0f5f37573960)
+
+
+
+ON Wallet Operations
+ press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets
+ you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
+ one click copies the address and you get a message response confirming it
+ON Generate Options
+ you can generate new wallets
+ you can generate new addresses for the current selected wallet , set amount.
+ON Wallet settings
+ you can import private keys in hexadecimal format to an existing wallet (one currently selected)
+ soon comes backup function
+ 
+(the encryption and password are soon to come, where you can only select an encrypted wallet after submitting the correct decryption password, and if wallet has 2fa enabled it would be asked when doing transactions or generating addresses depending on wallet_client improvements thanks to Sycorax)
+
+
+
+
+
+i hope all is self explanatory let me know if there is any questions
+
+now casino people can handle their telegram bot keys in denaro wallet too. enjoy
+
+Donations : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr
+
+
 # Denaro Wallet Client
 
 ## Introduction
