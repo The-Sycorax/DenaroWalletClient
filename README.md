@@ -9,6 +9,7 @@ RUN : UI.py
 ON Wallet Operations
  press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets
  you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
+ one click copies the address and you get a message response confirming it
 ON Generate Options
  you can generate new wallets
  you can generate new addresses for the current selected wallet , set amount.
