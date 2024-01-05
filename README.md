@@ -1,9 +1,20 @@
 # Denaro Wallet Client
-This repo contains the source code for a wallet client developed for the Denaro cryptocurrency. Designed for high-level security and asset management, the client can be adapted for use with other cryptocurrencies. It employs multiple security mechanisms and dual-layer encryption, using ChaCha20-Poly1305 and AES-GCM, to safeguard cryptographic keys.
 
-Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro
+## Introduction
+**This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency.It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets. The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports.**
 
-## Installation Guide:
+**Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.**
+
+**Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro**
+
+## Wallet Security Framework
+Paramount to it's design, the wallet client has been developed with a high-level of security in mind, perticularly for encrypted wallets. It features several protective security measures to safeguard and fortify wallet data. These measures include proof-of-work based brute-force protection, two-factor authentication, double-hashed password verification, and rigorous integrity checks of wallet data. Additionally, there are measures to identify and record unauthorized access attempts, along with an automatic wallet deletion feature which activates after 10 failed access attempts, providing an added layer of defense.
+
+Inherent to its architecture, the wallet client deeply inegrates and bakes these security measures directly into the cryptographic processes responsible for encrypting/decrypting wallet data. Central to this approach is a unique dual-layer technique that combines both the ChaCha20-Poly1305 and AES-GCM encryption algorithms. 
+
+This encryption method is implemented in stages, beginning with the encryption of individual JSON key-value pairs of wallet data using the dual-layer technique. Following this, an additional encryption layer is applied to the entire JSON entry that contains these encrypted pairs, resulting in multiple layers of encryption. By implementing this multi-layered encryption approach along with the various security mechanisms, the wallet client not only secures wallet data but also substantially fortifies its underlying cryptographic keys against a variety threats.
+
+## Installation Guide
 ```bash
 # Clone the repository
 git clone https://github.com/The-Sycorax/DenaroWalletClient.git
@@ -34,7 +45,7 @@ deactivate
 
 ------------
 
-## Usage Documentation:
+## Usage Documentation
 - ### Command-Line Interface:
 
     **Overview**: The wallet client provides a rebust CLI for operting the Denaro Wallet Client. 
@@ -497,12 +508,12 @@ deactivate
 
 ------------
 
-## Disclaimer:
+## Disclaimer
 
 Neither The-Sycorax nor contributors of this project assume liability for any loss of funds incurred through the use of this software! This software is provided 'as is' under the [MIT License](LICENSE) without guarantees or warrenties of any kind, express or implied. It is strongly recommended that users back up their cryptographic keys. User are solely responsible for the security and management of their assets! The use of this software implies acceptance of all associated risks, including financial losses, with no liability on The-Sycorax or contributors of this project.
 
 ------------
 
-## License:
+## License
 The Denaro Wallet Client is released under the terms of the MIT license. See [LICENSE](LICENSE) for more
 information or see https://opensource.org/licenses/MIT.
