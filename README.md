@@ -1,9 +1,9 @@
 # Denaro Wallet Client
 
 ## Introduction
-**This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency.It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets. The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports.**
+**This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency.It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets.** 
 
-**Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.**
+**The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports. Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.**
 
 **Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro**
 
