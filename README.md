@@ -3,7 +3,8 @@
 RUN : UI.py
 
 
-![Screenshot from 2024-01-05 13-56-44](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/ff2a413a-ec02-4f5e-814d-8b8acd35b270)
+![Screenshot from 2024-01-05 15-45-45](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/4ba50451-32b2-4a00-a76a-0f5f37573960)
+
 
 
 ON Wallet Operations
