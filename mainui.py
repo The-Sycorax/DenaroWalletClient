@@ -17,8 +17,11 @@ from tkinter import PhotoImage
 def update_wallet_dropdown(values):
     wallet_dropdown['values'] = values
 
+def load_wallets():
+    threading.Thread(target=load_wallets_thread, daemon=True).start()
+
 def load_wallets_thread():
-    wallet_dir = "./wallets"  # Update this path to your wallet directory
+    wallet_dir = "./wallets"
     wallet_files = [f for f in os.listdir(wallet_dir) if f.endswith('.json')]
 
     # Use a helper function to update the dropdown in the main thread
@@ -69,6 +72,9 @@ def display_addresses(*args):
 
 
 def refresh_balance():
+    threading.Thread(target=refresh_balance_thread, daemon=True).start()
+
+def refresh_balance_thread():
     selected_wallet_file = wallet_dropdown.get()
     if selected_wallet_file:
         wallet_name = selected_wallet_file.replace('.json', '')
