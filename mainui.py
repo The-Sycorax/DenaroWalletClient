@@ -10,10 +10,6 @@ import threading
 from tkinter import PhotoImage
 
 
-
-# Modified load_wallets function to start thread
-
-
 def update_wallet_dropdown(values):
     wallet_dropdown['values'] = values
 
