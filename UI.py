@@ -23,7 +23,7 @@ class LoadingScreen(QSplashScreen):
         self.logo_label.setAlignment(Qt.AlignCenter)
 
         # Text label for "Denaro Core" and version
-        self.text_label = QLabel("Denaro Core\nVersion v1.0.0", self)
+        self.text_label = QLabel("Denaro Core\nVersion v1.0.1", self)
         self.text_label.setAlignment(Qt.AlignBottom | Qt.AlignHCenter)
         self.text_label.setStyleSheet("""
             QLabel {
@@ -57,7 +57,7 @@ def main():
     splash.show()
 
     # Set a timer to close the splash screen
-    QTimer.singleShot(5000, splash.close)  # 10 seconds display time
+    QTimer.singleShot(3500, splash.close)  # 10 seconds display time
 
     # Set a timer to open the main window, slightly after the splash screen closes
     QTimer.singleShot(3000, show_main_window)  # Delay to ensure it opens after splash screen
