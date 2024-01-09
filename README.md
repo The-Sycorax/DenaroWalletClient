@@ -1,5 +1,6 @@
 # NEW #  Denaro Core V1.0.1, DenaroWalletClient GUI #
 
+make sure to import manually the file including wallets files .json until i fix to allow wallet generation and file in case user has no wallets.
 RUN : UI.py
 
 ![Screenshot from 2024-01-09 05-11-42](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/d1041b5a-ac9d-44c1-965e-f69b3a47f2c6)
