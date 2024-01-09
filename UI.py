@@ -23,7 +23,7 @@ class LoadingScreen(QSplashScreen):
         self.logo_label.setAlignment(Qt.AlignCenter)
 
         # Text label for "Denaro Core" and version
-        self.text_label = QLabel("Denaro Core\nVersion v1.0.1", self)
+        self.text_label = QLabel("Denaro Core\nVersion v1.0.0", self)
         self.text_label.setAlignment(Qt.AlignBottom | Qt.AlignHCenter)
         self.text_label.setStyleSheet("""
             QLabel {
@@ -38,17 +38,27 @@ class LoadingScreen(QSplashScreen):
         layout.addWidget(self.logo_label, alignment=Qt.AlignCenter)
         layout.addWidget(self.text_label, alignment=Qt.AlignBottom | Qt.AlignHCenter)
 
-    def showEvent(self, event):
-        # Center the splash screen on the screen
-        screen = QApplication.primaryScreen().geometry()
-        splash_size = self.geometry()
-        self.move((screen.width() - splash_size.width()) / 8,
-                  (screen.height() - splash_size.height()) / 8)
-        super().showEvent(event)
+def showEvent(self, event):
+    # Center the splash screen on the screen
+    screen = QApplication.primaryScreen().geometry()
+    splash_size = self.geometry()
+    self.move(int((screen.width() - splash_size.width()) / 8),
+              int((screen.height() - splash_size.height()) / 8))
+    super().showEvent(event)
 
-def show_main_window():
-    # Run the mainui.py script
-    subprocess.Popen(["python3", "/home/cyract-root/32seed/DenaroWalletClient/mainui.py"])
+def show_main_window(splash, app):
+    # Run the mainui.py script and keep the process handle
+    process = subprocess.Popen(["python3", "/home/cyract-root/32seed/DenaroWalletClient/mainui.py"])
+
+    # Check periodically if the mainui.py process has exited
+    def check_process():
+        if process.poll() is not None:  # If mainui.py is closed
+            app.quit()  # Close the application
+
+    # Set up a timer to check the process status
+    timer = QTimer()
+    timer.timeout.connect(check_process)
+    timer.start(1000)  # Check every 1000 milliseconds (1 second)
 
 def main():
     app = QApplication(sys.argv)
@@ -57,13 +67,12 @@ def main():
     splash.show()
 
     # Set a timer to close the splash screen
-    QTimer.singleShot(3500, splash.close)  # 10 seconds display time
+    QTimer.singleShot(3500, splash.close)  # 3.5 seconds display time
 
-    # Set a timer to open the main window, slightly after the splash screen closes
-    QTimer.singleShot(3000, show_main_window)  # Delay to ensure it opens after splash screen
+    # Open the main window, slightly after the splash screen closes
+    QTimer.singleShot(3000, lambda: show_main_window(splash, app))
 
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
-
