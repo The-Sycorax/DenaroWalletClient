@@ -8,6 +8,26 @@ import tkinter.font as tkFont
 from tkinter import simpledialog, messagebox
 import threading
 from tkinter import PhotoImage
+import ast
+
+
+# Modified load_wallets function to start thread
+first_click = True
+wallets_loaded = False
+# Global variable to store the password of the currently opened encrypted wallet
+wallet_password = None
+
+def on_load_button_click():
+    global first_click
+    if first_click:
+        load_wallets()
+        load_button.config(text="Refresh")
+        first_click = False
+    else:
+        refresh_wallets()
+
+def refresh_wallets():
+    threading.Thread(target=load_wallets_thread, daemon=True).start()
 
 
 def update_wallet_dropdown(values):
@@ -17,6 +37,8 @@ def load_wallets():
     threading.Thread(target=load_wallets_thread, daemon=True).start()
 
 def load_wallets_thread():
+    global wallets_loaded
+
     wallet_dir = "./wallets"
     wallet_files = [f for f in os.listdir(wallet_dir) if f.endswith('.json')]
 
@@ -28,8 +50,88 @@ def load_wallets_thread():
         root.after(0, lambda: wallet_dropdown.set(wallet_files[0]))
         root.after(0, display_addresses)
 
-    root.after(0, loading_popup.destroy)  # Close the popup
+    #root.after(0, loading_popup.destroy)  # Close the popup
 
+    # Update button text to "Refresh" only once
+    if not wallets_loaded:
+        root.after(0, lambda: load_button.config(text="Refresh"))
+        wallets_loaded = True
+
+
+def is_wallet_encrypted(wallet_path):
+    try:
+        with open(wallet_path, 'r') as file:
+            wallet_data = json.load(file)
+            return 'hmac' in wallet_data.get("wallet_data", {}) and 'verifier' in wallet_data.get("wallet_data", {})
+    except json.JSONDecodeError:
+        return False 
+        
+def load_wallet_data(wallet_path):
+    # Clear the current address list
+    for i in address_list.get_children():
+        address_list.delete(i)
+
+    # Load addresses from the selected wallet file
+    with open(wallet_path, 'r') as file:
+        wallet_data = json.load(file)
+        normal_entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("entries", [])
+        imported_entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("imported_entries", [])
+
+    for entry in normal_entries + imported_entries:
+        if 'address' in entry:
+            address = entry["address"]
+            address_list.insert("", "end", values=(address, "Balance: Loading..."))
+    
+    refresh_balance()  # Refresh balance for new addresses
+
+
+def decrypt_wallet(wallet_name, password):
+    global wallet_password
+    wallet_password = password
+    command = ["python3", "wallet_client.py", "decryptwallet", "-wallet", wallet_name, "-password", password]
+    try:
+        result = subprocess.run(command, check=True, text=True, capture_output=True)
+        output = result.stdout.strip()
+
+        # Check if the output contains wallet data
+        if "Wallet Data:" in output:
+            try:
+                # Extract the JSON part from the output
+                json_data_start = output.index("{")
+                json_data_end = output.rindex("}") + 1
+                json_data_str = output[json_data_start:json_data_end]
+                json_data = json.loads(json_data_str)
+                update_address_list_with_decrypted_data(json_data)
+                messagebox.showinfo("Success", "Wallet decrypted successfully.")
+            except (ValueError, json.JSONDecodeError) as e:
+                messagebox.showerror("Error", f"Failed to parse wallet data: {e}")
+        else:
+            messagebox.showerror("Error", "Wrong password.")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"Decryption failed:\nStdout: {e.stdout}\nStderr: {e.stderr}")
+
+def update_address_list_with_decrypted_data(wallet_data):
+    # Clear the current address list
+    for i in address_list.get_children():
+        address_list.delete(i)
+
+    # Initialize a list to store addresses for the sending address dropdown
+    sending_addresses = []
+
+    # Extract and display addresses from the decrypted wallet data
+    entries = wallet_data.get("entry_data", {}).get("entries", [])
+    for entry in entries:
+        if 'address' in entry:
+            address = entry["address"]
+            address_list.insert("", "end", values=(address, "Balance: Loading..."))
+            sending_addresses.append(address)
+
+    refresh_balance()  # Refresh balance for new addresses
+
+    # Update sending address dropdown
+    sending_address_dropdown['values'] = sending_addresses
+    if sending_addresses:
+        sending_address_dropdown.set(sending_addresses[0])
 
 
 def load_wallets():
@@ -42,27 +144,23 @@ def load_wallets():
         display_addresses() 
 
 def display_addresses(*args):
+    global wallet_password
     selected_wallet_file = wallet_dropdown.get()
     if selected_wallet_file:
-        wallet_dir = "./wallets"  # Update this path to your wallet directory
+        wallet_dir = "./wallets"
         wallet_path = os.path.join(wallet_dir, selected_wallet_file)
 
-        # Clear the current address list
-        for i in address_list.get_children():
-            address_list.delete(i)
+        # Check if the wallet is encrypted
+        if is_wallet_encrypted(wallet_path):
+            password = simpledialog.askstring("Password", "Enter wallet password:", show="*")
+            if password:
+                decrypt_wallet(selected_wallet_file, password)
+            else:
+                messagebox.showwarning("Warning", "No password provided. Cannot access encrypted wallet.")
+        else:
+            wallet_password = None  # Clear the password when switching to a non-encrypted wallet
+            load_wallet_data(wallet_path)
 
-        # Load addresses from the selected wallet file
-        with open(wallet_path, 'r') as file:
-            wallet_data = json.load(file)
-            normal_entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("entries", [])
-            imported_entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("imported_entries", [])
-
-        for entry in normal_entries + imported_entries:
-            if 'address' in entry:
-                address = entry["address"]
-                address_list.insert("", "end", values=(address, "Balance: Loading..."))
-        
-        refresh_balance()  # Refresh balance for new addresses
 
 
 
@@ -71,10 +169,17 @@ def refresh_balance():
     threading.Thread(target=refresh_balance_thread, daemon=True).start()
 
 def refresh_balance_thread():
+    global wallet_password
     selected_wallet_file = wallet_dropdown.get()
     if selected_wallet_file:
         wallet_name = selected_wallet_file.replace('.json', '')
-        result = subprocess.run(["python3", "wallet_client.py", "balance", "-wallet", wallet_name], capture_output=True, text=True)
+        command = ["python3", "wallet_client.py", "balance", "-wallet", wallet_name]
+
+        # Check if wallet is encrypted and password is set, then append password
+        if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and wallet_password:
+            command.extend(["-password", wallet_password])
+
+        result = subprocess.run(command, capture_output=True, text=True)
         output = result.stdout.strip()
 
         total_balance_value = 0  # Initialize total balance
@@ -101,6 +206,8 @@ def refresh_balance_thread():
 
 
 def send_transaction():
+    global wallet_password  # Use the global password variable
+
     selected_wallet_file = wallet_dropdown.get()
     wallet_name = selected_wallet_file.replace('.json', '')
 
@@ -108,10 +215,7 @@ def send_transaction():
         messagebox.showerror("Error", "No wallet selected.")
         return
 
-    # Get the selected address from the dropdown
     sending_address = sending_address_dropdown.get()
-
-    # Get the amount and receiver address from the entries
     amount = amount_entry.get()
     receiver_address = recipient_address_entry.get()
 
@@ -119,19 +223,24 @@ def send_transaction():
         messagebox.showwarning("Warning", "Please fill all fields.")
         return
 
+    # Constructing the command according to the specified format
     command = [
-    "python3", "wallet_client.py", "send", "-amount", amount, "from",
-    "-wallet", wallet_name, "-address", sending_address, 
-    "to", receiver_address
-]
+        "python3", "wallet_client.py", "send", "-amount", amount, "from", 
+        "-wallet=" + wallet_name
+    ]
+
+    # Add password to command if the wallet is encrypted
+    if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and wallet_password:
+        command.append("-password=" + wallet_password)
+
+    # Append the address and recipient
+    command.extend(["-address", sending_address, "to", receiver_address])
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-        messagebox.showinfo("Success", "Transaction sent:\n" + result.stdout)
+        messagebox.showinfo("Transaction Status", f"Transaction sent:\n{result.stdout}")
     except subprocess.CalledProcessError as e:
-        error_message = f"Transaction failed:\nStdout: {e.stdout}\nStderr: {e.stderr}"
-        messagebox.showerror("Error", error_message)
-        print(error_message)
+        messagebox.showerror("Error", f"Transaction failed:\n{e.stderr}")
 
 
 
@@ -142,16 +251,20 @@ def generate_wallet():
     wallet_name = wallet_name_entry.get()
     password = password_entry.get()
 
+    # Create the command with the wallet name
     command = ["python3", "wallet_client.py", "generatewallet", "-wallet", wallet_name]
+
+    # Add the password to the command if provided
     if password:
-        command.extend(["-password", password])
+        command.extend(["-password", password, "-encrypt"])
 
     if wallet_name:
         try:
             result = subprocess.run(command, capture_output=True, text=True, check=True)
-            print("Wallet generated:", result.stdout)
+            messagebox.showinfo("Success", "Wallet generated:\n" + result.stdout)
         except subprocess.CalledProcessError as e:
-            print("Error in generating wallet:", e.output)
+            messagebox.showerror("Error", "Error in generating wallet:\n" + str(e))
+
 
 
 # Flags to control the visibility of frames
@@ -233,37 +346,28 @@ def generate_addresses():
 
     # Retrieve the amount and validate it
     amount_str = generate_amount_entry.get().strip()
-    print("Amount Entered:", amount_str)
-
     try:
         # Ensure that the amount_str is a valid integer
-        amount = int(amount_str)  # Convert it to an integer
+        amount = int(amount_str)
     except ValueError:
-        # Handle the case where the amount_str is not a valid integer
         generation_output_label.config(text="Error: Invalid amount. Please enter a valid integer.")
         return
 
-
     if selected_wallet_file:
-        # Convert the amount_str to an integer and back to a string
-        amount_str = str(int(amount_str))
-
-        command = ["python3", "wallet_client.py", "generateaddress", "-wallet", wallet_name, "-amount", amount_str]
+        command = ["python3", "wallet_client.py", "generateaddress", "-wallet", wallet_name, "-amount", str(amount)]
         if password:
             command.extend(["-password", password])
         if tfacode:
             command.extend(["-2fa-code", tfacode])
 
-        try:
-            # Print the command for debugging purposes
-            print("Command:", " ".join(command))
-            
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
-            generation_output_label.config(text="Addresses generated successfully:\n" + result.stdout)
-        except subprocess.CalledProcessError as e:
-            error_message = f"Command failed:\nStdout: {e.stdout}\nStderr: {e.stderr}"
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        # Check for empty or error output
+        if not result.stdout.strip() or result.returncode != 0:
+            error_message = "Error occurred: " + (result.stderr or "No addresses generated. Check password or other details.")
             generation_output_label.config(text=error_message)
-            print(error_message)
+        else:
+            generation_output_label.config(text="Addresses generated successfully:\n" + result.stdout)
 
 
 
@@ -308,8 +412,26 @@ def on_treeview_select(event):
 
 
 
+def backup_wallet():
+    backup_info_text.configure(state="normal")  # Enable editing to modify text
+    backup_info_text.delete('1.0', tk.END)  # Clear existing text
 
-
+    selected_wallet_file = backup_wallet_dropdown.get()
+    if selected_wallet_file:
+        wallet_path = os.path.join("./wallets", selected_wallet_file)
+        with open(wallet_path, 'r') as file:
+            wallet_data = json.load(file)
+            entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("entries", [])
+            for entry in entries:
+                backup_info = f"Mnemonic: {entry.get('mnemonic', 'N/A')}\n"
+                backup_info += f"Private Key: {entry.get('private_key', 'N/A')}\n"
+                backup_info += f"Public Key: {entry.get('public_key', 'N/A')}\n"
+                backup_info += f"Address: {entry.get('address', 'N/A')}\n\n"
+                backup_info_text.insert(tk.END, backup_info)
+        backup_info_text.configure(state="disabled")  # Disable editing to make text read-only
+    else:
+        messagebox.showwarning("Warning", "No wallet selected for backup.")
+        backup_info_text.configure(state="disabled")  # Ensure text is read-only if no wallet selected
 
 
 # Initialize the main window
@@ -321,24 +443,27 @@ root.geometry(f"{window_width}x{window_height}")
 root.resizable(False, False)
 
 # Configure styles
-DARK_BG = "#2B2B2B"
+# Configure styles for light mode
+DARK_BG = "#FFFFFF"
+LIGHT_BG = "#FFFFFF"  # White background
+DARK_TEXT = "#000000"  # Black text
+ACCENT_COLOR = "#0077CC"  # Blue for accent
+ENTRY_BG = "#F0F0F0"  # Light grey for entry fields
+BUTTON_BG = "#E0E0E0"  # Light grey for buttons
 LIGHT_TEXT = "#0077CC"
-ACCENT_COLOR = "#4BA3C7"
-BUTTON_BG = "#333333"  # Background color for buttons and now for the window
-ENTRY_BG = "#484848"
 PAD_X = 10
 PAD_Y = 5
 
 style = ttk.Style(root)
 style.theme_use('clam')
 style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=LIGHT_TEXT)
-style.configure('TFrame', background=BUTTON_BG)
-style.configure('TButton', background=BUTTON_BG, foreground=LIGHT_TEXT)
-style.map('TButton', background=[('active', ACCENT_COLOR)], foreground=[('active', LIGHT_TEXT)])
-style.configure('TLabel', background=BUTTON_BG, foreground=LIGHT_TEXT)
-style.configure('TEntry', background=ENTRY_BG, foreground=LIGHT_TEXT)
-style.configure('TCombobox', fieldbackground=ENTRY_BG, foreground=LIGHT_TEXT)
-style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG)
+style.configure('TFrame', background=LIGHT_BG)
+style.configure('TButton', background=BUTTON_BG, foreground=DARK_TEXT)
+style.map('TButton', background=[('active', ACCENT_COLOR)], foreground=[('active', DARK_TEXT)])
+style.configure('TLabel', background=LIGHT_BG, foreground=DARK_TEXT)
+style.configure('TEntry', background=ENTRY_BG, foreground=DARK_TEXT)
+style.configure('TCombobox', fieldbackground=ENTRY_BG, foreground=DARK_TEXT)
+style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=DARK_TEXT)
 style.map('Treeview', background=[('selected', ACCENT_COLOR)])
 root.configure(bg=BUTTON_BG)
 
@@ -361,7 +486,7 @@ wallet_dropdown.pack(padx=PAD_X, pady=PAD_Y, in_=tab1)
 wallet_dropdown.bind('<<ComboboxSelected>>', display_addresses)
 
 # Button to load wallets
-load_button = ttk.Button(root, text="Load Wallets", command=load_wallets)
+load_button = ttk.Button(root, text="Load Wallets", command=on_load_button_click)
 load_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab1)
 #send_button = ttk.Button(root, text="Send", command=send_transaction)
 #send_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab1)
@@ -496,6 +621,24 @@ def open_send_transaction():
         send_transaction_frame.pack_forget()
         is_send_transaction_frame_open = False
 
+
+backup_wallet_frame = tk.Frame(tab3, bg=DARK_BG)
+backup_wallet_label = ttk.Label(backup_wallet_frame, text="Never share your keys")
+backup_wallet_dropdown = ttk.Combobox(backup_wallet_frame, state="readonly", values=[f for f in os.listdir("./wallets") if f.endswith('.json')])
+backup_wallet_button = ttk.Button(backup_wallet_frame, text="Reveal", command=backup_wallet)
+
+# Create a Text widget with a Scrollbar for displaying backup information
+backup_info_text = tk.Text(backup_wallet_frame, height=10, width=50)
+backup_info_scroll = ttk.Scrollbar(backup_wallet_frame, command=backup_info_text.yview)
+backup_info_text.configure(yscrollcommand=backup_info_scroll.set)
+
+# Positioning the Backup Wallet Frame widgets
+backup_wallet_label.pack(side="top", fill='x')
+backup_wallet_dropdown.pack(side="top", fill='x')
+backup_wallet_button.pack(side="top", fill='x')
+backup_info_text.pack(side="left", fill='both', expand=True)
+backup_info_scroll.pack(side="right", fill='y')
+backup_wallet_frame.pack(padx=PAD_X, pady=PAD_Y)
 
 # Send button
 send_button = ttk.Button(root, text="Send", command=open_send_transaction)
