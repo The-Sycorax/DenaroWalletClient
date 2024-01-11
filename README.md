@@ -15,25 +15,31 @@ RUN : UI.py
 
 # On Wallet Operations tab
 
- press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets, Now encrypted wallets totally supported
- you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
- one click copies the address and you get a message response confirming it(2FA soon to be on transactions too i guess)
+ press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets(it will be improved soon to refresh balance and load faster), Now encrypted wallets totally supported.
+ 
+ you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds.
+
+ one click copies the address and you get a message response confirming it(2FA soon to be on transactions too i guess).
+ 
+ if you can't see your addresses in send tab list to send just keep the send tab open, refresh and open the wallet you want to use and the addresses list in send options should be refreshed and you should see and choose available addresses to send.
 
 # ON Generate Options tab
 
  you can generate new wallets , encrypted wallets with passwords. (soon deterministic and 2fa)
+ 
  you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required)
 
 # On Wallet Settings tab
 
  you can import private keys in hexadecimal format to an existing wallet (one currently selected).
+ 
  you can backup your keys by selecting available wallet and pressing reveal key button to get it. never share your keys if you don't want to risk losing your funds.(encrypted wallets require password)
 
 
 
 # Contact
 
-i hope all is self explanatory let me know if there is any questions or bugs. if you can't see your addresses to send just keep the send tab open, refresh and open the wallet and the addresses list in send options and you should see em 
+i hope all is self explanatory let me know if there is any questions or bugs. 
 
 now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
