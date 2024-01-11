@@ -1,6 +1,7 @@
 # NEW #  Denaro Core V1.0.1, DenaroWalletClient GUI #
 
-make sure to import manually the file including wallets files .json until i fix to allow wallet generation and file in case user has no wallets.
+make sure to import manually the file including wallets files .or generate a new one in the second tab(soon encrypted wallets will be added).
+
 RUN : UI.py
 
 ![Screenshot from 2024-01-09 05-11-42](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/d1041b5a-ac9d-44c1-965e-f69b3a47f2c6)
@@ -10,29 +11,33 @@ RUN : UI.py
 
 
 
-ON Wallet Operations
- press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets, Now encrypted wallets with 1 address are supported(still under work) , password upon wallet selection is mandatory before you can get access to addresses and other utilities
+# On Wallet Operations tab
+
+ press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets, Now encrypted wallets totally supported
  you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
  one click copies the address and you get a message response confirming it
-ON Generate Options
+
+# ON Generate Options tab
+
  you can generate new wallets
- you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is mandatory)
-ON Wallet settings
+ you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required)
+
+# On Wallet Settings tab
+
  you can import private keys in hexadecimal format to an existing wallet (one currently selected).
- you can backup your keys by selecting available wallet and pressing reveal key button to get it. never share your keys if you don't want to risk losing your funds.(encrypted wallets aren't yet supported, under work)
- 
-(the encryption and password are soon to come, where you can only select an encrypted wallet after submitting the correct decryption password, and if wallet has 2fa enabled it would be asked when doing transactions or generating addresses depending on wallet_client improvements thanks to Sycorax)
+ you can backup your keys by selecting available wallet and pressing reveal key button to get it. never share your keys if you don't want to risk losing your funds.(encrypted wallets require password)
 
 
 
+# Contact
 
-
-i hope all is self explanatory let me know if there is any questions
+i hope all is self explanatory let me know if there is any questions or bugs.
 
 now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
 Donations : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr
 
+Telegram : @ProCryptoDealer
 
 # Denaro Wallet Client
 
