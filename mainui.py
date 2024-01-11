@@ -7,7 +7,7 @@ import re
 import tkinter.font as tkFont
 from tkinter import simpledialog, messagebox
 import threading
-from tkinter import PhotoImage
+from tkinter import PhotoImage, Label
 import ast
 import re
 
@@ -472,14 +472,35 @@ def display_wallet_data(wallet_data):
     backup_info_text.configure(state="disabled")
 
 
+
+
+
 # Initialize the main window
 root = tk.Tk()
-root.title("Denaro Core v1.0.0")
+root.title("Denaro Wallet Core v1.0.1")
 window_width = 1003
 window_height = 499
 root.geometry(f"{window_width}x{window_height}")
 root.resizable(False, False)
 
+top_frame = tk.Frame(root, bg='white')  # Set the background color as needed
+top_frame.pack(side='top', fill='x')
+
+# Load and resize the logo image
+logo_path = "des.png"  # Update this to your logo file path
+logo_image = PhotoImage(file=logo_path)
+logo_image = logo_image.subsample(10, 10)  # Adjust as needed
+
+# Create a label for the logo in the top frame
+logo_label = tk.Label(top_frame, image=logo_image, bg='white')
+logo_label.grid(row=0, column=0, padx=5, pady=5)
+
+text_label = tk.Label(top_frame, text="Denaro Wallet", bg='white', fg='blue', font=('Helvetica', 22, 'bold'))
+text_label.grid(row=0, column=1, padx=5, pady=5)
+
+
+top_frame.columnconfigure(1, weight=10)  # Give more weight to the center column
+top_frame.columnconfigure(2, weight=1)
 # Configure styles
 # Configure styles for light mode
 DARK_BG = "#FFFFFF"
@@ -492,6 +513,9 @@ LIGHT_TEXT = "#0077CC"
 PAD_X = 10
 PAD_Y = 5
 
+
+
+
 style = ttk.Style(root)
 style.theme_use('clam')
 style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=LIGHT_TEXT)
@@ -503,6 +527,7 @@ style.configure('TEntry', background=ENTRY_BG, foreground=DARK_TEXT)
 style.configure('TCombobox', fieldbackground=ENTRY_BG, foreground=DARK_TEXT)
 style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=DARK_TEXT)
 style.map('Treeview', background=[('selected', ACCENT_COLOR)])
+style.configure("Treeview.Heading", background="blue", foreground="white", font=('Helvetica', 10, 'bold'))
 root.configure(bg=BUTTON_BG)
 
 
@@ -538,7 +563,7 @@ address_labels = {}
 
 # Button to display addresses
 columns = ('Address', 'Balance')
-address_list = ttk.Treeview(tab1, columns=columns, show='headings')
+address_list = ttk.Treeview(tab1, columns=columns, show='headings', style="Treeview")
 address_list.heading('Address', text='Address')
 address_list.heading('Balance', text='Balance')
 address_list.pack(side="left", fill="both", expand=True)
