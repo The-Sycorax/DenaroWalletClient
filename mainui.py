@@ -10,6 +10,7 @@ import threading
 from tkinter import PhotoImage, Label
 import ast
 import re
+import webbrowser
 
 # Modified load_wallets function to start thread
 first_click = True
@@ -431,16 +432,13 @@ def backup_wallet():
                     if "Password Attempts Left" in result.stdout:
                         messagebox.showerror("Error", "Incorrect password. Please try again.")
                     else:
-                        # Extract JSON data from the output
                         json_data_match = re.search(r'"entry_data":\s*\{.*\}\n\s*\}', result.stdout, re.DOTALL)
                         if json_data_match:
                             json_data_str = '{' + json_data_match.group(0)
-                            print("Extracted JSON:", json_data_str)  # Debug print
                             try:
                                 wallet_data = json.loads(json_data_str)
                                 display_wallet_data(wallet_data)
                             except json.JSONDecodeError as e:
-                                print("JSON parsing error:", e)  # Debug print
                                 backup_info_text.insert(tk.END, "Failed to parse wallet data.")
                         else:
                             backup_info_text.insert(tk.END, "Failed to find wallet data in the output.")
@@ -452,22 +450,34 @@ def backup_wallet():
                 messagebox.showwarning("Warning", "No password provided. Cannot access encrypted wallet.")
                 backup_info_text.configure(state="disabled")
         else:
-            with open(wallet_path, 'r') as file:
-                wallet_data = json.load(file)
-                display_wallet_data(wallet_data)
+            # For non-encrypted wallets
+            try:
+                with open(wallet_path, 'r') as file:
+                    wallet_data = json.load(file)
+                    display_wallet_data(wallet_data)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to read wallet data: {e}")
     else:
         messagebox.showwarning("Warning", "No wallet selected for backup.")
         backup_info_text.configure(state="disabled")  # Ensure text is read-only if no wallet selected
 
 def display_wallet_data(wallet_data):
     """ Display wallet data in the backup info text widget. """
-    entries = wallet_data.get("entry_data", {}).get("entries", [])
-    for entry in entries:
-        backup_info = f"Mnemonic: {entry.get('mnemonic', 'N/A')}\n"
-        backup_info += f"Private Key: {entry.get('private_key', 'N/A')}\n"
-        backup_info += f"Public Key: {entry.get('public_key', 'N/A')}\n"
-        backup_info += f"Address: {entry.get('address', 'N/A')}\n\n"
-        backup_info_text.insert(tk.END, backup_info)
+    backup_info_text.configure(state="normal")  # Enable editing to modify text
+    backup_info_text.delete('1.0', tk.END)  # Clear existing text
+
+    try:
+        # Determine the structure based on whether the data is from an encrypted wallet or not
+        entries = wallet_data.get("entry_data", {}).get("entries", []) if "entry_data" in wallet_data else wallet_data.get("wallet_data", {}).get("entry_data", {}).get("entries", [])
+        
+        for entry in entries:
+            backup_info = f"ID: {entry.get('id', 'N/A')}\n"
+            backup_info += f"Private Key: {entry.get('private_key', 'N/A')}\n"
+            backup_info += f"Public Key: {entry.get('public_key', 'N/A')}\n"
+            backup_info += f"Address: {entry.get('address', 'N/A')}\n\n"
+            backup_info_text.insert(tk.END, backup_info)
+    except Exception as e:
+        backup_info_text.insert(tk.END, f"Error processing wallet data: {e}")
 
     backup_info_text.configure(state="disabled")
 
@@ -537,9 +547,12 @@ tab_control = ttk.Notebook(root)
 tab1 = ttk.Frame(tab_control, style='TFrame')
 tab2 = ttk.Frame(tab_control, style='TFrame')
 tab3 = ttk.Frame(tab_control, style='TFrame')
+tab4 = ttk.Frame(tab_control, style='TFrame')
 tab_control.add(tab1, text='Wallet Operations')
 tab_control.add(tab2, text='Generate Options')
 tab_control.add(tab3, text='Wallet Settings')
+tab_control.add(tab4, text='FAQ')
+
 tab_control.pack(expand=1, fill="both")
 
 
@@ -712,6 +725,30 @@ generate_addresses_button = ttk.Button(root, text="Generate Addresses", command=
 generate_addresses_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)
 import_private_key_button = ttk.Button(tab3, text="Import Private Key", command=open_import_private_key_dialog)
 import_private_key_button.pack(padx=PAD_X, pady=PAD_Y)
+
+
+# FAQ content Text widget
+faq_text = tk.Text(tab4, wrap='word', state='normal', height=25)
+faq_text.pack(padx=PAD_X, pady=PAD_Y, fill='both', expand=True)
+
+
+def open_link(url):
+    webbrowser.open_new(url)
+
+# Insert FAQ content
+faq_content = """
+Welcome to the FAQ section. Here you will find answers to common questions.
+
+For more information, visit our [website](http://example.com).
+"""
+faq_text.insert('end', faq_content)
+
+# Making 'website' clickable
+faq_text.tag_configure("hyper", foreground="blue", underline=1)
+faq_text.tag_bind("hyper", "<Button-1>", lambda e: open_link("http://example.com"))
+faq_text.tag_add("hyper", "2.18", "2.25")  # Adjust indices to match the start and end of the hyperlink text
+faq_text.config(state='disabled')
+
 
 # Start the GUI loop
 root.mainloop()
