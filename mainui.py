@@ -436,7 +436,7 @@ def backup_wallet():
 
 # Initialize the main window
 root = tk.Tk()
-root.title("Denaro Core v1.0.1")
+root.title("Denaro Core v1.0.0")
 window_width = 1003
 window_height = 499
 root.geometry(f"{window_width}x{window_height}")
