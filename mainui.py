@@ -9,7 +9,7 @@ from tkinter import simpledialog, messagebox
 import threading
 from tkinter import PhotoImage
 import ast
-
+import re
 
 # Modified load_wallets function to start thread
 first_click = True
@@ -412,6 +412,7 @@ def on_treeview_select(event):
 
 
 
+
 def backup_wallet():
     backup_info_text.configure(state="normal")  # Enable editing to modify text
     backup_info_text.delete('1.0', tk.END)  # Clear existing text
@@ -419,19 +420,56 @@ def backup_wallet():
     selected_wallet_file = backup_wallet_dropdown.get()
     if selected_wallet_file:
         wallet_path = os.path.join("./wallets", selected_wallet_file)
-        with open(wallet_path, 'r') as file:
-            wallet_data = json.load(file)
-            entries = wallet_data.get("wallet_data", {}).get("entry_data", {}).get("entries", [])
-            for entry in entries:
-                backup_info = f"Mnemonic: {entry.get('mnemonic', 'N/A')}\n"
-                backup_info += f"Private Key: {entry.get('private_key', 'N/A')}\n"
-                backup_info += f"Public Key: {entry.get('public_key', 'N/A')}\n"
-                backup_info += f"Address: {entry.get('address', 'N/A')}\n\n"
-                backup_info_text.insert(tk.END, backup_info)
-        backup_info_text.configure(state="disabled")  # Disable editing to make text read-only
+
+        if is_wallet_encrypted(wallet_path):
+            password = simpledialog.askstring("Password", "Enter wallet password:", show="*")
+            if password:
+                try:
+                    command = ["python3", "wallet_client.py", "decryptwallet", "-wallet", selected_wallet_file, "-password", password]
+                    result = subprocess.run(command, capture_output=True, text=True, check=True)
+                    
+                    if "Password Attempts Left" in result.stdout:
+                        messagebox.showerror("Error", "Incorrect password. Please try again.")
+                    else:
+                        # Extract JSON data from the output
+                        json_data_match = re.search(r'"entry_data":\s*\{.*\}\n\s*\}', result.stdout, re.DOTALL)
+                        if json_data_match:
+                            json_data_str = '{' + json_data_match.group(0)
+                            print("Extracted JSON:", json_data_str)  # Debug print
+                            try:
+                                wallet_data = json.loads(json_data_str)
+                                display_wallet_data(wallet_data)
+                            except json.JSONDecodeError as e:
+                                print("JSON parsing error:", e)  # Debug print
+                                backup_info_text.insert(tk.END, "Failed to parse wallet data.")
+                        else:
+                            backup_info_text.insert(tk.END, "Failed to find wallet data in the output.")
+                except subprocess.CalledProcessError as e:
+                    messagebox.showerror("Error", "Error in decrypting wallet:\n" + str(e))
+                finally:
+                    backup_info_text.configure(state="disabled")
+            else:
+                messagebox.showwarning("Warning", "No password provided. Cannot access encrypted wallet.")
+                backup_info_text.configure(state="disabled")
+        else:
+            with open(wallet_path, 'r') as file:
+                wallet_data = json.load(file)
+                display_wallet_data(wallet_data)
     else:
         messagebox.showwarning("Warning", "No wallet selected for backup.")
         backup_info_text.configure(state="disabled")  # Ensure text is read-only if no wallet selected
+
+def display_wallet_data(wallet_data):
+    """ Display wallet data in the backup info text widget. """
+    entries = wallet_data.get("entry_data", {}).get("entries", [])
+    for entry in entries:
+        backup_info = f"Mnemonic: {entry.get('mnemonic', 'N/A')}\n"
+        backup_info += f"Private Key: {entry.get('private_key', 'N/A')}\n"
+        backup_info += f"Public Key: {entry.get('public_key', 'N/A')}\n"
+        backup_info += f"Address: {entry.get('address', 'N/A')}\n\n"
+        backup_info_text.insert(tk.END, backup_info)
+
+    backup_info_text.configure(state="disabled")
 
 
 # Initialize the main window
