@@ -31,7 +31,7 @@ RUN : UI.py
 
 # Contact
 
-i hope all is self explanatory let me know if there is any questions or bugs.
+i hope all is self explanatory let me know if there is any questions or bugs. if you can't see your addresses to send just keep the send tab open, refresh and open the wallet and the addresses list in send options and you should see em 
 
 now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
