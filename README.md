@@ -21,7 +21,7 @@ RUN : UI.py
 
 # ON Generate Options tab
 
- you can generate new wallets , encrypted wallets. (soon deterministic and 2fa)
+ you can generate new wallets , encrypted wallets with passwords. (soon deterministic and 2fa)
  you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required)
 
 # On Wallet Settings tab
