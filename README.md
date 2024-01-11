@@ -3,13 +3,13 @@
 make sure to import manually the file including wallets files .or generate a new one in the second tab(soon encrypted wallets will be added).
 
 RUN : UI.py
-
-![Screenshot from 2024-01-09 05-11-42](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/d1041b5a-ac9d-44c1-965e-f69b3a47f2c6)
-![Screenshot from 2024-01-09 05-39-33](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/7f16aa85-5322-4fbf-b46e-4b1bd2bdeda6)
-![Screenshot from 2024-01-09 05-10-01](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/97eea092-3ba4-4f37-85ec-834b3bedcc85)
+![Screenshot from 2024-01-11 17-55-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/bd22885f-37cc-4ce6-b9bb-fb9ef8aa7753)
 
 
+![Screenshot from 2024-01-11 18-35-47](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/03e9a7c9-ba33-4142-a86c-912e14577fc3)
 
+
+![Screenshot from 2024-01-11 18-36-29](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/89df9393-8a64-4b2b-b2c4-cb75a89519c6)
 
 # On Wallet Operations tab
 
