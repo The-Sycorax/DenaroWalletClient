@@ -1,6 +1,6 @@
 # NEW #  Denaro Core V1.0.1, DenaroWalletClient GUI #
 
-make sure to import manually the file including wallets files .or generate a new one in the second tab(soon encrypted wallets will be added).
+make sure to import manually the file including wallets files .or generate a new one in the second tab(encrypted wallet generation under work).
 
 RUN : UI.py
 ![Screenshot from 2024-01-11 17-55-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/bd22885f-37cc-4ce6-b9bb-fb9ef8aa7753)
