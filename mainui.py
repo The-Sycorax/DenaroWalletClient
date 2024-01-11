@@ -250,21 +250,28 @@ def send_transaction():
 
 def generate_wallet():
     wallet_name = wallet_name_entry.get()
-    password = password_entry.get()
+    password = generate_wallet_password_entry.get()  # Use the renamed widget
 
-    # Create the command with the wallet name
+    # Base command for generating a wallet
     command = ["python3", "wallet_client.py", "generatewallet", "-wallet", wallet_name]
 
-    # Add the password to the command if provided
-    if password:
+    # Check if a password is provided and append it to the command
+    if password.strip():
         command.extend(["-password", password, "-encrypt"])
 
-    if wallet_name:
-        try:
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
-            messagebox.showinfo("Success", "Wallet generated:\n" + result.stdout)
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", "Error in generating wallet:\n" + str(e))
+    # Debug: Print the command for verification
+    print("Executing command:", " ".join(command))
+
+    # Execute the command
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        messagebox.showinfo("Success", "Wallet generated:\n" + result.stdout)
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", "Error in generating wallet:\n" + str(e))
+
+
+
+
 
 
 
@@ -279,26 +286,15 @@ is_generate_addresses_frame_open = False
 def show_generate_wallet_fields():
     global is_generate_wallet_frame_open
     if not is_generate_wallet_frame_open:
-        # Pack the frame and its components
-        wallet_name_label.pack(side="top", fill='x')
-        wallet_name_entry.pack(side="top", fill='x')
-        password_label.pack(side="top", fill='x')
-        password_entry.pack(side="top", fill='x')
-        confirm_generate_button.pack(side="top", fill='x')
-
-        # Pack the frame right after the generate wallet button
-        generate_wallet_frame.pack(padx=PAD_X, pady=PAD_Y, after=generate_wallet_button)
+        # Pack the frame below the generate wallet button
+        generate_wallet_frame.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)  # Make sure it's packed in the correct tab or parent
         is_generate_wallet_frame_open = True
     else:
-        # Unpack the frame and its components
-        wallet_name_label.pack_forget()
-        wallet_name_entry.pack_forget()
-        password_label.pack_forget()
-        password_entry.pack_forget()
-        confirm_generate_button.pack_forget()
-
+        # Unpack the frame
         generate_wallet_frame.pack_forget()
         is_generate_wallet_frame_open = False
+
+
 
 
 
@@ -596,17 +592,32 @@ total_balance = tk.StringVar()
 total_balance_label = ttk.Label(root, textvariable=total_balance, justify=tk.RIGHT)
 total_balance_label.pack(side="bottom", anchor="e", padx=PAD_X, pady=PAD_Y, in_=tab1)
 
-# Send Transaction Frame (initially not packed)
-# Send Transaction Frame widgets
 
 
+# Generate Wallet Frame widgets
+# ... [previous code] ...
+
+# Generate Wallet Frame widgets
 # Generate Wallet Frame widgets
 generate_wallet_frame = tk.Frame(root, bg=DARK_BG)
 wallet_name_label = ttk.Label(generate_wallet_frame, text="Wallet Name:")
 wallet_name_entry = ttk.Entry(generate_wallet_frame)
-password_label = ttk.Label(generate_wallet_frame, text="Password (optional):")
-password_entry = ttk.Entry(generate_wallet_frame, show="*")
+generate_wallet_password_label = ttk.Label(generate_wallet_frame, text="Password (optional):")
+generate_wallet_password_entry = ttk.Entry(generate_wallet_frame, show="*")  # Renamed password entry widget
 confirm_generate_button = ttk.Button(generate_wallet_frame, text="Confirm", command=generate_wallet)
+
+# Packing widgets within generate_wallet_frame
+wallet_name_label.pack(side="top", fill='x')
+wallet_name_entry.pack(side="top", fill='x')
+generate_wallet_password_label.pack(side="top", fill='x')
+generate_wallet_password_entry.pack(side="top", fill='x')
+confirm_generate_button.pack(side="top", fill='x')
+
+
+# ... [rest of your code] ...
+
+
+
 
 # Generate Addresses Frame widgets
 generate_addresses_frame = tk.Frame(root, bg=DARK_BG)
@@ -720,7 +731,9 @@ backup_wallet_frame.pack(padx=PAD_X, pady=PAD_Y)
 send_button = ttk.Button(root, text="Send", command=open_send_transaction)
 send_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab1)
 generate_wallet_button = ttk.Button(root, text="Generate Wallet", command=show_generate_wallet_fields)
-generate_wallet_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)
+generate_wallet_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)  # Adjust the placement as needed
+
+
 generate_addresses_button = ttk.Button(root, text="Generate Addresses", command=toggle_generate_addresses_frame)
 generate_addresses_button.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)
 import_private_key_button = ttk.Button(tab3, text="Import Private Key", command=open_import_private_key_dialog)
