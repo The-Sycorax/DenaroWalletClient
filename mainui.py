@@ -736,18 +736,32 @@ def open_link(url):
     webbrowser.open_new(url)
 
 # Insert FAQ content
-faq_content = """
-Welcome to the FAQ section. Here you will find answers to common questions.
+# New FAQ content
+new_faq_content = """
+***Introducing Denaro
 
-For more information, visit our [website](http://example.com).
+A unique Python-based cryptocurrency offering fast, secure transactions with a blockchain capable of handling 40 transactions per second. With a focus on decentralization and efficiency, Denaro is reshaping digital finance and flexibility.  Join the excitement at our exclusive Denaro-token-powered Telegram casino! Play, win, and be part of a new era of crypto gaming.
+
+**Casino bot: [https://t.me/DenaroCasinoBot?start=rezeilo
+
+**Casino Community: [https://t.me/EmojiBetting]
+
+**Website: [https://denaro.is/]
+
+**Explorer: [https://explorer.denaro.is/]
+
+**DVM (Denaro Virtual Machine) is a layer built on top of Denaro Blockchain, which uses transaction messages to communicate with the VM: [https://github.com/denaro-coin/dvm]
+
+**Miner: [https://github.com/geiccobs/denaro-cuda-miner]
+
+****Wallet:
+
+Our wallet will allow you to send and receive Denaro coin on Denaro chain, facilitate the use of your private keys and enhance the security of your funds and wallets. Keep in mind that you should not share your keys with any third parties or even Denaro devs as they will never ask you to do so. If there is any trouble or bugs encountered while using our wallet please report to the Telegram group: [t.me/DenaroGroup](https://t.me/DenaroGroup)
 """
-faq_text.insert('end', faq_content)
+faq_text.insert('end', new_faq_content)
+
 
 # Making 'website' clickable
-faq_text.tag_configure("hyper", foreground="blue", underline=1)
-faq_text.tag_bind("hyper", "<Button-1>", lambda e: open_link("http://example.com"))
-faq_text.tag_add("hyper", "2.18", "2.25")  # Adjust indices to match the start and end of the hyperlink text
-faq_text.config(state='disabled')
 
 
 # Start the GUI loop
