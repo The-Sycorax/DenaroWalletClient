@@ -1,6 +1,7 @@
 # NEW #  Denaro Core V1.0.1, DenaroWalletClient GUI #
 
-make sure to import manually the file including wallets files .or generate a new one in the second tab(encrypted wallet generation under work).
+make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic and 2fa are soon to be added)
+
 
 RUN : UI.py
 ![Screenshot from 2024-01-11 17-55-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/bd22885f-37cc-4ce6-b9bb-fb9ef8aa7753)
@@ -16,11 +17,11 @@ RUN : UI.py
 
  press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets, Now encrypted wallets totally supported
  you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds
- one click copies the address and you get a message response confirming it
+ one click copies the address and you get a message response confirming it(2FA soon to be on transactions too i guess)
 
 # ON Generate Options tab
 
- you can generate new wallets
+ you can generate new wallets , encrypted wallets. (soon deterministic and 2fa)
  you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required)
 
 # On Wallet Settings tab
