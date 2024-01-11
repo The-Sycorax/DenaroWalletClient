@@ -6,7 +6,8 @@ RUN : UI.py
 ![Screenshot from 2024-01-11 17-55-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/bd22885f-37cc-4ce6-b9bb-fb9ef8aa7753)
 
 
-![Screenshot from 2024-01-11 18-35-47](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/03e9a7c9-ba33-4142-a86c-912e14577fc3)
+![Screenshot from 2024-01-11 18-37-37](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/24680411-ea44-44dc-bdce-5e03cb1dc66d)
+
 
 
 ![Screenshot from 2024-01-11 18-36-29](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/89df9393-8a64-4b2b-b2c4-cb75a89519c6)
