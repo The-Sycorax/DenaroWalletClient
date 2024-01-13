@@ -11,6 +11,7 @@ from tkinter import PhotoImage, Label
 import ast
 import re
 import webbrowser
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Modified load_wallets function to start thread
 first_click = True
@@ -86,13 +87,19 @@ def load_wallet_data(wallet_path):
     refresh_balance()  # Refresh balance for new addresses
 
 
-def decrypt_wallet(wallet_name, password):
+def decrypt_wallet(wallet_name, password, two_factor_code=None):
     global wallet_password
     wallet_password = password
     command = ["python3", "wallet_client.py", "decryptwallet", "-wallet", wallet_name, "-password", password]
+
+    # Add 2FA code to command if provided
+    if two_factor_code:
+        command.extend(["-2fa-code", two_factor_code])
+
     try:
-        result = subprocess.run(command, check=True, text=True, capture_output=True)
+        result = subprocess.run(command, text=True, capture_output=True, timeout=5)
         output = result.stdout.strip()
+
 
         # Check if the output contains wallet data
         if "Wallet Data:" in output:
@@ -110,7 +117,11 @@ def decrypt_wallet(wallet_name, password):
             messagebox.showerror("Error", "Wrong password.")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Decryption failed:\nStdout: {e.stdout}\nStderr: {e.stderr}")
-
+    except subprocess.TimeoutExpired:
+        messagebox.showerror("Error", "Operation timed out. 2FA code may be needed.")
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"Decryption failed:\nStdout: {e.stdout}\nStderr: {e.stderr}")
+        
 def update_address_list_with_decrypted_data(wallet_data):
     # Clear the current address list
     for i in address_list.get_children():
@@ -153,11 +164,32 @@ def display_addresses(*args):
 
         # Check if the wallet is encrypted
         if is_wallet_encrypted(wallet_path):
-            password = simpledialog.askstring("Password", "Enter wallet password:", show="*")
-            if password:
-                decrypt_wallet(selected_wallet_file, password)
-            else:
-                messagebox.showwarning("Warning", "No password provided. Cannot access encrypted wallet.")
+            # Create a new dialog for password and 2FA code
+            dialog = tk.Toplevel(root)
+            dialog.title("Decrypt Wallet")
+
+            tk.Label(dialog, text="Enter wallet password:").pack()
+            password_entry = ttk.Entry(dialog, show="*")
+            password_entry.pack()
+
+            tk.Label(dialog, text="Enter 2FA code (if applicable):").pack()
+            two_fa_entry = ttk.Entry(dialog)
+            two_fa_entry.pack()
+
+            def on_confirm():
+                password = password_entry.get()
+                two_fa_code = two_fa_entry.get() if two_fa_entry.get() else None
+                dialog.destroy()
+                if password:
+                    decrypt_wallet(selected_wallet_file, password, two_fa_code)
+                else:
+                    messagebox.showwarning("Warning", "No password provided. Cannot access encrypted wallet.")
+
+            confirm_button = ttk.Button(dialog, text="Confirm", command=on_confirm)
+            confirm_button.pack()
+
+            dialog.mainloop()
+
         else:
             wallet_password = None  # Clear the password when switching to a non-encrypted wallet
             load_wallet_data(wallet_path)
@@ -174,33 +206,57 @@ def refresh_balance_thread():
     selected_wallet_file = wallet_dropdown.get()
     if selected_wallet_file:
         wallet_name = selected_wallet_file.replace('.json', '')
-        command = ["python3", "wallet_client.py", "balance", "-wallet", wallet_name]
 
-        # Check if wallet is encrypted and password is set, then append password
-        if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and wallet_password:
-            command.extend(["-password", wallet_password])
-
-        result = subprocess.run(command, capture_output=True, text=True)
-        output = result.stdout.strip()
-
-        total_balance_value = 0  # Initialize total balance
-
-        # Update balance in the address list and calculate total balance
+        addresses = []
         for child in address_list.get_children():
             address = address_list.item(child)["values"][0]
-            balance_search = re.search(f"Address #\\d+: {address}\s+Balance: (.+?)\s", output)
+            addresses.append(address)
+
+        # Function to fetch balance for an address
+        def fetch_balance(address):
+            command = [
+                "python3", "wallet_client.py", "balance", "-wallet", wallet_name, 
+                "-address", address
+            ]
+            if wallet_password:
+                command.extend(["-password", wallet_password])
+
+            try:
+                result = subprocess.run(command, capture_output=True, text=True, check=True)
+                output = result.stdout.strip()
+            except subprocess.CalledProcessError as e:
+                print(f"Error fetching balance for {address}: {e.stderr.strip()}")
+                return address, "Error"
+
+            balance_search = re.search(r"Balance: (.+?)\s", output)
             if balance_search:
                 balance = balance_search.group(1)
-                address_list.item(child, values=(address, f"Balance: {balance} DNR"))
-                try:
-                    balance_amount = float(balance.replace(' DNR', ''))  # Assuming balance is in BTC
-                    total_balance_value += balance_amount
-                except ValueError:
-                    pass  # If the balance is not a valid number, ignore it
+                return address, balance
+            else:
+                return address, "Balance not found"
+
+        # Using ThreadPoolExecutor for parallel processing
+        total_balance_value = 0
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_address = {executor.submit(fetch_balance, address): address for address in addresses}
+            for future in as_completed(future_to_address):
+                address = future_to_address[future]
+                address, balance = future.result()  # Unpack the tuple
+                if balance not in ["Error", "Balance not found"]:
+                    root.after(0, lambda addr=address, bal=balance: update_address_balance(addr, bal))
+                    try:
+                        balance_amount = float(balance.replace(' DNR', ''))
+                        total_balance_value += balance_amount
+                    except ValueError:
+                        pass
 
         # Update total balance
-        total_balance.set(f"Total Balance: {total_balance_value} DNR")  # Assuming balance is in BTC
+        root.after(0, lambda: total_balance.set(f"Total Balance: {total_balance_value} DNR"))
 
+def update_address_balance(address, balance):
+    for child in address_list.get_children():
+        if address_list.item(child)["values"][0] == address:
+            address_list.item(child, values=(address, f"Balance: {balance}"))
 
 
 
@@ -230,18 +286,27 @@ def send_transaction():
         "-wallet=" + wallet_name
     ]
 
-    # Add password to command if the wallet is encrypted
-    if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and wallet_password:
-        command.append("-password=" + wallet_password)
+    # Check if wallet is encrypted and ask for 2FA if needed
+    if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)):
+        if wallet_password:
+            command.append("-password=" + wallet_password)
+
+        # Ask for 2FA code
+        tfacode = simpledialog.askstring("2FA Code", "Enter 2FA code (if applicable):", show="*")
+        if tfacode:
+            command.append("-2fa-code=" + tfacode)
 
     # Append the address and recipient
     command.extend(["-address", sending_address, "to", receiver_address])
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, text=True, capture_output=True, timeout=5)
+        output = result.stdout.strip()
         messagebox.showinfo("Transaction Status", f"Transaction sent:\n{result.stdout}")
     except subprocess.CalledProcessError as e:
         messagebox.showerror("Error", f"Transaction failed:\n{e.stderr}")
+    except subprocess.TimeoutExpired:
+        messagebox.showerror("Error", "Operation timed out. 2FA code may be needed.")
 
 
 
@@ -295,10 +360,43 @@ def show_generate_wallet_fields():
         is_generate_wallet_frame_open = False
 
 
+def generate_2fa_wallet():
+    wallet_name = wallet_name_entry.get()
+    password = generate_wallet_password_entry.get()
 
+    if not wallet_name:
+        messagebox.showerror("Error", "Please enter a wallet name.")
+        return
+    if not password:
+        messagebox.showwarning("Warning", "Password is required for generating a 2FA wallet.")
+        return
+    command = ["python3", "wallet_client.py", "generatewallet", "-wallet", wallet_name, "-password", password, "-encrypt", "-2fa"]
 
+    try:
+        result = subprocess.Popen(command, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+        # Create a new window for 2FA code input
+        two_fa_window = tk.Toplevel(root)
+        two_fa_window.title("2FA Authentication")
+        two_fa_label = ttk.Label(two_fa_window, text="Enter the 2FA code from your authenticator app:")
+        two_fa_label.pack()
+        two_fa_entry = ttk.Entry(two_fa_window)
+        two_fa_entry.pack()
 
+        def confirm_2fa():
+            two_fa_code = two_fa_entry.get()
+            two_fa_window.destroy()
+
+            # Send 2FA code to subprocess and capture output
+            output, error = result.communicate(two_fa_code + '\n')
+            final_output = (output or "") + (error or "")
+            messagebox.showinfo("2FA Wallet Generation Output", final_output)
+
+        confirm_button = ttk.Button(two_fa_window, text="Confirm", command=confirm_2fa)
+        confirm_button.pack()
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to generate 2FA wallet: {str(e)}")
 
 
 def show_send_transaction_fields():
@@ -357,14 +455,21 @@ def generate_addresses():
         if tfacode:
             command.extend(["-2fa-code", tfacode])
 
-        result = subprocess.run(command, capture_output=True, text=True)
+        try:
+            result = subprocess.run(command, text=True, capture_output=True, timeout=5)
+            output = result.stdout.strip()
 
-        # Check for empty or error output
-        if not result.stdout.strip() or result.returncode != 0:
-            error_message = "Error occurred: " + (result.stderr or "No addresses generated. Check password or other details.")
-            generation_output_label.config(text=error_message)
-        else:
-            generation_output_label.config(text="Addresses generated successfully:\n" + result.stdout)
+            # Check for empty or error output
+            if not output or result.returncode != 0:
+                error_message = "Error occurred: " + (result.stderr or "No addresses generated. Check password or other details.")
+                generation_output_label.config(text=error_message)
+            else:
+                generation_output_label.config(text="Addresses generated successfully:\n" + output)
+        except subprocess.TimeoutExpired:
+            #messagebox.showerror("Operation Failed", "Operation failed: Invalid 2FA might be the cause.\nPlease try again.")
+            generation_output_label.config(text="Operation timed out. Check 2FA and try again.")
+
+
 
 
 
@@ -420,10 +525,15 @@ def backup_wallet():
 
         if is_wallet_encrypted(wallet_path):
             password = simpledialog.askstring("Password", "Enter wallet password:", show="*")
+            tfacode = None  # Initialize tfacode to None
             if password:
+                tfacode = simpledialog.askstring("2FA Code", "Enter 2FA code (if applicable):", show="*")
                 try:
                     command = ["python3", "wallet_client.py", "decryptwallet", "-wallet", selected_wallet_file, "-password", password]
-                    result = subprocess.run(command, capture_output=True, text=True, check=True)
+                    if tfacode:
+                        command.extend(["-2fa-code", tfacode])
+
+                    result = subprocess.run(command, capture_output=True, text=True, timeout=5)
                     
                     if "Password Attempts Left" in result.stdout:
                         messagebox.showerror("Error", "Incorrect password. Please try again.")
@@ -438,6 +548,8 @@ def backup_wallet():
                                 backup_info_text.insert(tk.END, "Failed to parse wallet data.")
                         else:
                             backup_info_text.insert(tk.END, "Failed to find wallet data in the output.")
+                except subprocess.TimeoutExpired:
+                    messagebox.showerror("Error", "Failed to decrypt wallet: 2FA code might be the reason.")
                 except subprocess.CalledProcessError as e:
                     messagebox.showerror("Error", "Error in decrypting wallet:\n" + str(e))
                 finally:
@@ -456,6 +568,7 @@ def backup_wallet():
     else:
         messagebox.showwarning("Warning", "No wallet selected for backup.")
         backup_info_text.configure(state="disabled")  # Ensure text is read-only if no wallet selected
+
 
 def display_wallet_data(wallet_data):
     """ Display wallet data in the backup info text widget. """
@@ -483,9 +596,9 @@ def display_wallet_data(wallet_data):
 
 # Initialize the main window
 root = tk.Tk()
-root.title("Denaro Wallet Core v1.0.1")
-window_width = 1003
-window_height = 499
+root.title("Denaro Wallet")
+window_width = 1200
+window_height = 699
 root.geometry(f"{window_width}x{window_height}")
 root.resizable(False, False)
 
@@ -495,14 +608,14 @@ top_frame.pack(side='top', fill='x')
 # Load and resize the logo image
 logo_path = "des.png"  # Update this to your logo file path
 logo_image = PhotoImage(file=logo_path)
-logo_image = logo_image.subsample(10, 10)  # Adjust as needed
+logo_image = logo_image.subsample(8, 8)  # Adjust as needed
 
 # Create a label for the logo in the top frame
 logo_label = tk.Label(top_frame, image=logo_image, bg='white')
 logo_label.grid(row=0, column=0, padx=5, pady=5)
 
-text_label = tk.Label(top_frame, text="Denaro Wallet", bg='white', fg='blue', font=('Helvetica', 22, 'bold'))
-text_label.grid(row=0, column=1, padx=5, pady=5)
+text_label = tk.Label(top_frame, text="v1.0.1", bg='white', fg='blue', font=('Helvetica', 22, 'bold'))
+text_label.grid(row=0, column=1, padx=6, pady=6)
 
 
 top_frame.columnconfigure(1, weight=10)  # Give more weight to the center column
@@ -521,19 +634,38 @@ PAD_Y = 5
 
 
 
+def clear_treeview_selection(event):
+    # Clear the selection in the address_list Treeview
+    address_list.selection_remove(address_list.selection())
+
+# Bind the clear_treeview_selection function to a mouse click event on the root window
+
+
+# Additionally, if you have other frames or widgets where you also want to clear the selection when clicked, bind them as well
+top_frame.bind("<Button-1>", clear_treeview_selection)
 
 style = ttk.Style(root)
 style.theme_use('clam')
-style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=LIGHT_TEXT)
+style.configure("Treeview",
+                background=BUTTON_BG,  # Background color of the Treeview
+                fieldbackground=BUTTON_BG,  # Background color of the fields
+                foreground=DARK_TEXT,  # Text color
+                rowheight=25,  # Height of each row, adjust as per requirement
+                font=('Helvetica', 12, 'bold'))  # Font style and size for content
+
 style.configure('TFrame', background=LIGHT_BG)
 style.configure('TButton', background=BUTTON_BG, foreground=DARK_TEXT)
 style.map('TButton', background=[('active', ACCENT_COLOR)], foreground=[('active', DARK_TEXT)])
 style.configure('TLabel', background=LIGHT_BG, foreground=DARK_TEXT)
 style.configure('TEntry', background=ENTRY_BG, foreground=DARK_TEXT)
 style.configure('TCombobox', fieldbackground=ENTRY_BG, foreground=DARK_TEXT)
-style.configure('Treeview', background=BUTTON_BG, fieldbackground=BUTTON_BG, foreground=DARK_TEXT)
-style.map('Treeview', background=[('selected', ACCENT_COLOR)])
-style.configure("Treeview.Heading", background="blue", foreground="white", font=('Helvetica', 10, 'bold'))
+style.configure("Treeview.Heading",
+                background="white",  # Background color of the headings
+                foreground="blue",  # Text color of the headings
+                font=('Helvetica', 14, 'bold'))  # Font style and size for headings
+
+style.map('Treeview', background=[('selected', ACCENT_COLOR)])  # Background color when a row is selected
+style.configure("Treeview.Heading", background="white", foreground="blue", font=('Helvetica', 10, 'bold'))
 root.configure(bg=BUTTON_BG)
 
 
@@ -603,15 +735,27 @@ generate_wallet_frame = tk.Frame(root, bg=DARK_BG)
 wallet_name_label = ttk.Label(generate_wallet_frame, text="Wallet Name:")
 wallet_name_entry = ttk.Entry(generate_wallet_frame)
 generate_wallet_password_label = ttk.Label(generate_wallet_frame, text="Password (optional):")
-generate_wallet_password_entry = ttk.Entry(generate_wallet_frame, show="*")  # Renamed password entry widget
+generate_wallet_password_entry = ttk.Entry(generate_wallet_frame, show="*")
+
+# Regular wallet generation button
 confirm_generate_button = ttk.Button(generate_wallet_frame, text="Confirm", command=generate_wallet)
+
+# 2FA wallet generation button
+generate_2fa_wallet_button = ttk.Button(generate_wallet_frame, text="Generate 2FA Wallet", command=generate_2fa_wallet)
 
 # Packing widgets within generate_wallet_frame
 wallet_name_label.pack(side="top", fill='x')
 wallet_name_entry.pack(side="top", fill='x')
 generate_wallet_password_label.pack(side="top", fill='x')
 generate_wallet_password_entry.pack(side="top", fill='x')
-confirm_generate_button.pack(side="top", fill='x')
+
+# Create a frame for buttons to align them horizontally
+buttons_frame = tk.Frame(generate_wallet_frame, bg=DARK_BG)
+buttons_frame.pack(side="top", fill='x', pady=(5, 0))
+
+confirm_generate_button.pack(side="left", padx=(0, 5))
+generate_2fa_wallet_button.pack(side="left")
+
 
 
 # ... [rest of your code] ...
