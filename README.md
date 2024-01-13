@@ -13,19 +13,20 @@ RUN : UI.py
 
 # On Wallet Operations tab
 
- press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets(it will be improved soon to refresh balance and load faster), Now encrypted wallets totally supported.
+ press load wallets and select your wallet (should be detected) give it a bit of time to load each time you press it or switch between wallets(it will be improved soon to refresh balance and load faster), Now encrypted wallets and 2fa totally supported. (except for 2fa wallets balances , they are under construction)
  
- you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones to not loose funds.
-
- one click copies the address and you get a message response confirming it(2FA soon to be on transactions too i guess).
+ you can send transactions by selecting the address with funds and filling the amount and address with corresponding ones make sure the address is correct to not lose your funds.
+ 
+ one click copies the address and you get a message response confirming it.
+ 2FA is enabled in encrypted wallets transactions and upon selection if your wallet doesn't have 2fa code enabled just confirm the box empty (2fa if applicable)
  
  if you can't see your addresses in send tab list to send just keep the send tab open, refresh and open the wallet you want to use and the addresses list in send options should be refreshed and you should see and choose available addresses to send.
 
 # ON Generate Options tab
 
- you can generate new wallets , encrypted wallets with passwords. (soon deterministic and 2fa)
+ you can generate new wallets , encrypted wallets with passwords. and encrypted wallet with 2fa.
  
- you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required)
+ you can generate new addresses for the current selected wallet , set amount of addresses you want max 256, and the more addresses you have the slower the balance loads, also for encrypted wallets with password (the password is required), for 2fa enabled wallets 2fa is required too
 
 # On Wallet Settings tab
 
