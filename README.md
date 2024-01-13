@@ -1,6 +1,6 @@
 # NEW #  Denaro Core V1.0.1, DenaroWalletClient GUI #
 
-make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic and 2fa are soon to be added)
+make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic soon to be added)
 
 
 RUN : UI.py
