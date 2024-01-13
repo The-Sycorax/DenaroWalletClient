@@ -1,4 +1,4 @@
-# NEW #  Denaro wallet V1.0.1, DenaroWalletClient GUI #
+# Denaro wallet V1.0.1, DenaroWalletClient GUI #
 
 make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic soon to be added)
 
