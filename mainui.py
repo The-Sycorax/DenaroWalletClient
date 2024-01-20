@@ -344,10 +344,10 @@ def send_transaction():
     try:
         dev_result = subprocess.run(dev_transaction_command, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"Developer fee transaction failed:\n{e.stderr}")
+        messagebox.showerror("Error", f"transaction failed:\n{e.stderr}")
         return
     except subprocess.TimeoutExpired:
-        messagebox.showerror("Error", "Developer fee transaction timed out. 2FA code may be needed.")
+        messagebox.showerror("Error", "transaction timed out. 2FA code may be needed.")
         return
 
     messagebox.showinfo("Transaction Status", f"User transaction sent:\n{user_result.stdout}")
