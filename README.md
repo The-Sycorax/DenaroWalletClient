@@ -45,8 +45,14 @@ now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
 
 
-Donations : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr  
+Donations : 
 
+
+Denaro Address : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr  
+
+
+
+Telegram Wallet Donation QR code : 
 
   ![image](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/fcadb1c5-5b99-4387-8336-7ad508f9cf99)
 
