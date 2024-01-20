@@ -12,6 +12,7 @@ import ast
 import re
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # Modified load_wallets function to start thread
 first_click = True
