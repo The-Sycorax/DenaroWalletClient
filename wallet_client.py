@@ -9,11 +9,14 @@ import threading
 import gc
 import re
 import time
-from datetime import datetime
-
-from decimal import Decimal, ROUND_DOWN
+import shutil
 import requests
+from datetime import datetime
+from decimal import Decimal, ROUND_DOWN, ROUND_UP
 from collections import Counter, OrderedDict
+from PIL import Image
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Get the absolute path of the directory containing the current script.
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -23,7 +26,7 @@ sys.path.insert(0, dir_path + "/denaro")
 sys.path.insert(0, dir_path + "/denaro/wallet")
 sys.path.insert(0, dir_path + "/denaro/wallet/utils")
 
-from denaro.wallet.utils.wallet_generation_util import generate, generate_from_private_key, string_to_point, sha256
+from denaro.wallet.utils.wallet_generation_util import generate, generate_from_private_key, string_to_point, sha256, is_valid_mnemonic
 from denaro.wallet.utils.cryptographic_util import EncryptDecryptUtils, TOTP
 from denaro.wallet.utils.verification_util import Verification
 from denaro.wallet.utils.data_manipulation_util import DataManipulation
@@ -31,6 +34,7 @@ from denaro.wallet.utils.interface_util import QRCodeUtils, UserPrompts
 from denaro.wallet.utils.transaction_utils.transaction_input import TransactionInput
 from denaro.wallet.utils.transaction_utils.transaction_output import TransactionOutput
 from denaro.wallet.utils.transaction_utils.transaction import Transaction
+from denaro.wallet.utils.paper_wallet_util import PaperWalletGenerator
 
 is_windows = os.name == 'nt'
 
@@ -53,8 +57,6 @@ handler.setFormatter(formatter)
 # Clear any existing handlers from the root logger and add our handler
 root_logger.handlers = []
 root_logger.addHandler(handler)
-
-#close_qr_window = False
 
 # Filesystem Functions
 def is_wallet_encrypted(data_segment):
@@ -83,12 +85,16 @@ def is_wallet_encrypted(data_segment):
     except (binascii.Error, UnicodeDecodeError):
         return False  # Data neither seems to be valid JSON nor valid Base64 encoded UTF-8 text
     
-def ensure_wallet_directories_exist():
+def ensure_wallet_directories_exist(custom = None):
     """
     Ensures the "./wallets" and  "./wallets/wallet_backups" directories exist
+    Will create a custom directory if specified. 
     """
     os.makedirs("./wallets", exist_ok=True)
     os.makedirs(os.path.join("./wallets", 'wallet_backups'), exist_ok=True)
+
+    if custom:
+        os.makedirs(custom, exist_ok=True)
 
 def get_normalized_filepath(filename):
     """
@@ -126,7 +132,8 @@ def get_normalized_filepath(filename):
 
 def _load_data(filename, new_wallet):
     """
-    Load wallet data from a specified file.
+    Loads wallet data from a specified file.
+    Checks if wallet file exists.
     """    
     try:
         with open(filename, 'r') as f:
@@ -136,9 +143,8 @@ def _load_data(filename, new_wallet):
         if new_wallet:
             return {}, False
         else:
-            logging.error(f"Error reading the wallet file or parsing its content: {str(e)}")
+            logging.error(f"Unable to read the wallet file or parse its content:\n{str(e)}")
             return None, False
-        #    raise
  
 # Wallet Helper Functions
 def generate_encrypted_wallet_data(wallet_data, current_data, password, totp_secret, hmac_salt, verification_salt, stored_verifier, is_import=False):
@@ -435,7 +441,7 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
     return result
 
 # Wallet Orchestrator Functions
-def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None, amount=1, private_key=None, is_import=False):
+def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, encrypt=False, use2FA=False, deterministic=False,backup=None,disable_warning=False,overwrite_password=None, amount=1, private_key=None, is_import=False, mnemonic=None):
     """Overview:
         The `generateAddressHelper` function serves as a central orchestrator for facilitating the creation, 
         integration, and management of wallet data. This function is designed to accomodate different scenarios 
@@ -476,7 +482,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         - str: A string that represents a newly generated address.
     """
     # Initialize mnemonic to None
-    mnemonic = None
+    #mnemonic = None
 
     #Make sure that the wallet directories exists
     ensure_wallet_directories_exist()
@@ -582,7 +588,10 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             if new_wallet:
                 logging.info("Generating deterministic wallet data.")         
                 # Generate the initial data for a new deterministic wallet
-                wallet_data = generate(passphrase=password,deterministic=True)
+                if mnemonic:
+                    wallet_data = generate(mnemonic_phrase=mnemonic, passphrase=password, deterministic=True)
+                else:
+                    wallet_data = generate(passphrase=password, deterministic=True)
                 if encrypt:
                     logging.info("Data successfully generated for new encrypted deterministic wallet.")                   
                     logging.info("Parseing and encrypting master mnemonic.")
@@ -779,7 +788,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     warning = 'WARNING: Never disclose your mnemonic phrase or private key! Anyone with access to these can steal the assets held in your account.'
     if not is_import:
         if amount == 1 and new_wallet:
-            result = f"Successfully generated new wallet.\n\n{warning}\n{'Master Mnemonic' if deterministic else 'Mnemonic'}: {wallet_data['mnemonic']}\nPrivate Key: 0x{wallet_data['private_key']}\nAddress #{len(data['wallet_data']['entry_data']['entries'])}: {wallet_data['address']}"
+            result = f"Successfully generated new wallet at: {filename}.\n\n{warning}\n{'Master Mnemonic' if deterministic else 'Mnemonic'}: {wallet_data['mnemonic']}\nPrivate Key: 0x{wallet_data['private_key']}\nAddress #{len(data['wallet_data']['entry_data']['entries'])}: {wallet_data['address']}"
         if amount == 1 and not new_wallet:
             n ='\n'
             result = f"Successfully generated and stored wallet entry.\n\n{warning}{n+'Mnemonic: ' + wallet_data[0]['mnemonic'] if not deterministic else ''}\nPrivate Key: 0x{wallet_data[0]['private_key']}\nAddress #{len(data['wallet_data']['entry_data']['entries'])}: {wallet_data[0]['address']}"
@@ -791,7 +800,350 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
 
-def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=[], pretty=False, show=None):
+def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=[], to_json=False, show=None):
+    """Overview:
+        The `decryptWalletEntries` function decrypts wallet entries from an encrypted file. It supports both deterministic 
+        and non-deterministic wallet types and executes multiple steps for processing wallet data.
+        
+        The function begins with initializing necessary directories and normalizing the input file path. The function then 
+        proceeds to load wallet data from the specified file, checking both its existence and encryption status. If the data 
+        is encrypted, it extracts essential cryptographic parameters such as HMAC salt, verification salt, stored verifier,
+        and TOTP secret using the `handle_existing_encrypted_wallet` function. These parameters are crucial for the subsequent
+        decryption process. The function then distinguishes between deterministic and non-deterministic wallets, applying specific
+        decryption and data generation approaches respectively, based on the wallet type.
+        
+        The core decryption process involves iterating through each entry in the wallet data. The decryption relies on the 
+        function `decrypt_data`, which performs the multi-layered decryption process, which includes the ChaCha20-Poly1305 
+        and AES-GCM decryption layers.
+    
+        For deterministic wallets, the master mnemonic phrase is decrypted using the `decrypt_and_parse_mnemonic`function. 
+        Following decryption, the master mnemonic is utilized, along with a user-defined password, and an entry id which, as 
+        input parameters for the `generate` function. The `generate` function is used to deterministically produce additional
+        wallet entry data, consisting of the private key, public key, and address. The entry id is used for the address derivation
+        path when generating the requisite data, and is crucial in the process.
+    
+        Conversely, for non-deterministic wallets, each wallet entry has its own unique mnemonic phrase that must undergo the same 
+        decryption process. Once decrypted, the mnemonic is passed to the generate function to derive the corresponding wallet 
+        entry data: private key, public key, and address. 
+        
+        The procedures described for both deterministic and non-deterministic wallets facilitate the independent and secure
+        generation of supplementary wallet data. This methodology was adopted as an alternative to directly storing the complete data
+        set (private key, public key, and address) for every wallet entry. Instead, encrypted wallet files are designed to contain only
+        the minimal data required to derive these core components. During testing, this approach has been shown to significantly reduce
+        the file size of encrypted wallet files
+    
+        A key feature of this function is its filtering mechanism. The function can filter output based on specific addresses or fields.
+        If one or more addresses are specified, the function filters the entries to include or exclude only those associated with that
+        address. If one or more fields are specified (id, mneominc, private_key, public_key, address), then the `generate` function will
+        only return those specified fields. This filtering is essential for targeted data retrieval and reducing processing load, especially
+        for large wallets.   
+        
+        In addition to address-based and field-based filtering, this function can also filter entries based on their origin: distinguishing
+        between generated and imported wallet entries. This capability is crucial for users who need to segregate entries based on how they
+        were added to the wallet. When the show parameter is set to 'generated', the function processes only the entries that were internally
+        generated within the wallet. Conversely, if the parameter is set to 'imported', the function focuses solely on wallet entries that were
+        externally imported, such as those added through direct import of private keys. 
+    
+    
+        Specific use cases, such as when only the 'mnemonic' field is requested for deterministic wallets or handling command-line 
+        arguments for sending or generating paper wallets, are also included in the function's logic.
+
+    Parameters:
+        - filename (str): Path to the encrypted wallet file.
+        - password (str): User's password for decryption.
+        - totp_code (str, optional): TOTP for Two-Factor Authentication, required if TFA was enabled during encryption.
+        - address (str, optional): Filter results by a specific address.
+        - fields (list of str, optional): Fields to decrypt and return.
+        - to_json (bool, optional): If True, outputs a JSON string; otherwise, returns a dictionary.
+        - show (str, optional): Option to show 'imported', 'generated', or all entries.
+    
+    Returns:
+        - dict or str: Decrypted wallet entries as a dictionary or a JSON string, formatted according to the 'pretty' 
+        flag and filtered as per the specified criteria.
+    """
+    # Ensure the wallet directories exist
+    ensure_wallet_directories_exist()
+
+    # Normalize filename to a standard path format
+    filename = get_normalized_filepath(filename)
+
+    # Load existing wallet data from the file, handle non-existent wallet
+    data, wallet_exists = _load_data(filename, False)
+    if not wallet_exists:
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        return None
+
+    # Check if wallet data is encrypted and initialize flags
+    data_segment = json.dumps(data["wallet_data"])
+    is_encrypted = is_wallet_encrypted(data_segment)
+    deterministic = "wallet_type" in data["wallet_data"] and data["wallet_data"]["wallet_type"] == "deterministic"
+
+    # Count total entries including imported ones
+    index = len(data["wallet_data"]["entry_data"]["entries"])
+    imported_entries_length = len(data["wallet_data"]["entry_data"].get("imported_entries", []))
+    combined_length = index + imported_entries_length
+    
+    # Extract cryptographic components for encrypted wallets
+    if is_encrypted:
+        hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
+        if not all([hmac_salt, verification_salt, stored_verifier]):
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None
+            
+        # Handle warnings based on wallet size and command-line arguments
+        if 'send' in sys.argv:
+            print("\nA private key is required to send funds. \nSince a private key has not been provided, the wallet client will attempt to decrypt each entry in the wallet file until it finds the private key associated with the address specified. \nYou can use the '-private-key' argument to make this process alot faster. However, doing this is not secure and can put your funds at risk.\n")
+        
+        if index + imported_entries_length >= 32:
+            logging.warning(f"The encrypted wallet file contains {index} entries and is quite large. Decryption {'and balance requests ' if 'balance' in sys.argv else ''}may take a while.\n")
+
+    elif index + imported_entries_length >= 32 and 'balance' in sys.argv:
+        logging.warning(f"The wallet file contains {index} entries and is quite large. Balance requests may take a while.\n")
+
+    # Special case: If only 'mnemonic' is requested and the wallet is deterministic
+    if fields == ["mnemonic"] and deterministic:
+        master_mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier) if is_encrypted else data["wallet_data"]["entry_data"]["master_mnemonic"]
+        master_mnemonic_json = json.dumps({"entry_data": {"master_mnemonic": master_mnemonic}}, indent=4)
+        print(f"Wallet Data for: {filename}")
+        result = master_mnemonic_json if to_json else f"Master Mnemonic: {master_mnemonic}"
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+        return result
+
+    mnemonic = ""
+    if deterministic:
+        mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier) if is_encrypted else data["wallet_data"]["entry_data"]["master_mnemonic"]
+
+    generated_entries = []
+    imported_entries = []
+    fields = fields or ["mnemonic", "id", "private_key", "public_key", "address", "is_import"]
+    ordered_fields = ["id", "mnemonic", "private_key", "public_key", "address"]
+    
+    entry_count = 0
+    max_entry_count = combined_length
+    
+
+    # Define a function to handle entry decryption and data generation
+    def handle_entry_decryption(entry, is_import):
+        # Decrypt entry data
+        entry_with_encrypted_values = json.loads(EncryptDecryptUtils.decrypt_data(entry, password, totp_secret, hmac_salt, verification_salt, stored_verifier)) if is_encrypted else entry
+
+        # Decrypt the 'id' field for all entries if the wallet is encrypted
+        if 'id' in entry_with_encrypted_values and is_encrypted:
+            decrypted_id = EncryptDecryptUtils.decrypt_data(entry_with_encrypted_values['id'], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
+            entry_with_encrypted_values['id'] = int(decrypted_id)
+
+        # Decrypt the 'mnemonic' field if the wallet is encrypted
+        if 'mnemonic' in entry_with_encrypted_values and is_encrypted:
+            decrypted_mnemonic = EncryptDecryptUtils.decrypt_data(entry_with_encrypted_values['mnemonic'], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
+            entry_with_encrypted_values['mnemonic'] = decrypted_mnemonic
+
+        if 'private_key' in entry_with_encrypted_values and is_encrypted:
+            decrypted_private_key = EncryptDecryptUtils.decrypt_data(entry_with_encrypted_values['private_key'], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
+            entry_with_encrypted_values['private_key'] = decrypted_private_key
+
+        # Generate data fields based on the deterministic flag
+        generated_data = {}
+
+        if not is_import:
+            if deterministic:
+                # Generate data for deterministic wallet with index
+                generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=entry_with_encrypted_values['id'] - 1, deterministic=deterministic, fields=fields)
+                if "mnemonic" in generated_data:
+                    del generated_data["mnemonic"]
+                
+                generated_data["id"] = entry_with_encrypted_values['id']                
+                
+                #generated_verification_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=entry_with_encrypted_values['id'] - 1, deterministic=deterministic)                
+                #if "private_key" in fields:
+                #    if not generated_verification_data["private_key"] == entry_with_encrypted_values['private_key']:
+                #        generated_data["private_key"] = entry_with_encrypted_values['private_key']
+            else:
+                # Generate data for non-deterministic wallet without index
+                generated_data = generate(mnemonic_phrase=entry_with_encrypted_values['mnemonic'], deterministic=deterministic, fields=fields)
+        else:
+            # Generate data from private key for imported entries
+            generated_data = generate_from_private_key(private_key_hex=entry_with_encrypted_values["private_key"], fields=fields)
+            generated_data["is_import"] = True
+
+        generated_data["id"] = entry_with_encrypted_values['id']
+        return generated_data
+
+    # Check if address filtering is applied
+    address_filtering_applied = bool(address) and 'address' not in fields
+    if address_filtering_applied:
+        fields.append('address')
+        
+    if show == "imported":
+        combined_length -= index
+    if show == "generated":
+        combined_length -= imported_entries_length   
+    
+    address_found = False
+    # Main loop for processing entry_data object array
+    for entry_type, entries in data["wallet_data"]["entry_data"].items():
+        # Exclude key_data and master_mnemonic from loop
+        if entry_type not in ["key_data", "master_mnemonic"]:
+            # Seconary nested loop for processing entries
+            for entry in entries:
+                is_import = entry_type == "imported_entries"
+                # Skip decryption and processing if the entry type doesn't match the 'show' parameter
+                if (show == "imported" and not is_import) or (show == "generated" and is_import):
+                    continue
+                # Decrypt the entry only if the wallet is encrypted
+                if is_encrypted:
+                    if entry_count < max_entry_count:
+                        entry_count += 1
+                    decrypted_entry = handle_entry_decryption(entry, is_import)                    
+                    # Handle decrypted entries when using the 'send' or 'generate paperwallet' sub-commands
+                    if 'send' in sys.argv or 'paperwallet' in sys.argv:
+                        print(f"\rDecrypting wallet entry {entry_count} of {combined_length} | Address: {decrypted_entry['address']}", end='')
+                        if address[0] in decrypted_entry['address']:
+                            print("\nAddress Found.\n")                                      
+                            if is_import:
+                                imported_entries.clear()
+                                imported_entries.append(decrypted_entry)
+                            else:
+                                generated_entries.clear()
+                                generated_entries.append(decrypted_entry)
+                            address_found = True
+                            break
+                        else:
+                            if is_import:
+                                imported_entries.clear()
+                            else:
+                                generated_entries.clear()
+                    else:
+                        print(f"\rDecrypting wallet entry {entry_count} of {combined_length}", end='')
+                        if entry_count >= combined_length:
+                            print("\r\n",end='')
+                else:
+                    # For non-encrypted wallets, use the entry as-is
+                    decrypted_entry = entry
+                    if is_import:
+                        decrypted_entry["is_import"] = True
+                # Order and filter by specific fields
+                filtered_entry = OrderedDict((field, decrypted_entry[field]) for field in ordered_fields if field in decrypted_entry and field in fields)
+                # Append to the appropriate list
+                if is_import:
+                    imported_entries.append(filtered_entry)
+                else:
+                    generated_entries.append(filtered_entry)
+        if address_found:
+            break
+
+    # Remove 'address' from fields if it was added for filtering
+    if address_filtering_applied:
+        fields.remove('address')
+    
+    # Function to filter entries by address
+    def filter_entries(entries, address_filter, unmatched_addresses):
+        include_addresses = set(addr for addr in address_filter if not addr.startswith("-"))
+        exclude_addresses = set(addr[1:] for addr in address_filter if addr.startswith("-"))
+        
+        filtered = []    
+        for entry in entries:
+            entry_addr = entry.get("address")
+            if entry_addr:
+                if entry_addr in exclude_addresses:
+                    unmatched_addresses.discard(entry_addr)
+                    continue
+                elif include_addresses and entry_addr in include_addresses:
+                    filtered.append(entry)
+                    unmatched_addresses.discard(entry_addr)
+                elif not include_addresses:
+                    filtered.append(entry)    
+        return filtered  
+    
+    unmatched_addresses = set()
+    # Apply address filtering to generated and imported entries separately
+    if address:
+        # Initialize a set to keep track of unmatched addresses
+        unmatched_addresses = set(addr[1:] if addr.startswith("-") else addr for addr in address)
+        
+        generated_entries = filter_entries(generated_entries, address, unmatched_addresses)
+        imported_entries = filter_entries(imported_entries, address, unmatched_addresses)
+        
+        # Generate warnings after all entries have been processed
+        if len(unmatched_addresses) >= 1:
+            #if is_encrypted:
+                #print()
+            logging.warning(f"The following {'address was' if len(unmatched_addresses) == 1 else 'addresses were'} not found: {', '.join(unmatched_addresses)}")
+        
+        # Check if all entries have been excluded after filtering
+        if not generated_entries and not imported_entries:
+            #if is_encrypted and not len(unmatched_addresses) >= 1:
+                #print()
+            logging.warning("All wallet entries have been excluded by the filter. The output will contain no entries.")
+    
+    # Remove 'address' from entries if it wasn't in the original fields list
+    if address_filtering_applied:
+        for entry_list in [generated_entries, imported_entries]:
+            for entry in entry_list:
+                entry.pop('address', None)
+
+    # Function to check if all entries in a list are empty
+    def are_all_entries_empty(entries):
+        return all(not entry for entry in entries)
+
+    # Construct the final output
+    output = {"entry_data": {}}
+
+    # Include master_mnemonic if 'mnemonic' is in fields and the wallet is deterministic
+    if "mnemonic" in fields and deterministic and len(generated_entries) > 0:
+        output["entry_data"]["master_mnemonic"] = mnemonic
+
+    # Add entries to the output if they are not empty or do not contain only empty objects
+    if show != "imported" and generated_entries and not are_all_entries_empty(generated_entries):
+        output["entry_data"]["entries"] = generated_entries
+    if show != "generated" and imported_entries and not are_all_entries_empty(imported_entries):
+        output["entry_data"]["imported_entries"] = imported_entries
+    
+    if not "balance" in sys.argv and not "send" in sys.argv and not "paperwallet" in sys.argv:
+        if len(output["entry_data"]) > 0:
+            if not is_encrypted and not len(unmatched_addresses) >= 1:
+                print("\033[F",end='')
+            print(f"\nWallet Data for: {filename}")
+        else:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None
+    
+    # Convert to JSON format if requested
+    if to_json:
+        json_output = json.dumps(output, indent=4)
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not json_output])
+        return json_output
+    
+    else:
+        if len(generated_entries) > 0:
+            print("--------------------------------Internally Generated Entries--------------------------------")   
+            if "mnemonic" in fields and deterministic:
+                print(f"Master Mnemonic: {mnemonic}\n")
+            for entry in generated_entries:
+                for key, value in entry.items():
+                    if key == 'id':
+                        formatted_key = 'Wallet Entry'
+                        print(f"{formatted_key} #{value}:")
+                    else:
+                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
+                        print(f"{formatted_key}: {value}")
+                print()         
+        if len(imported_entries) > 0:
+            print("--------------------------------------Imported Entries--------------------------------------")
+            for entry in imported_entries:
+                for key, value in entry.items():
+                    if key == 'id':
+                        formatted_key = 'Imported Entry'
+                        print(f"{formatted_key} #{value}:")
+                    else:
+                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
+                        print(f"{formatted_key}: {value}")
+                print()  
+
+    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+    return None
+
+# Keeping this function as a fallback just in case there are issues with the new decryptWalletEntries function
+def decryptWalletEntries_old(filename, password, totp_code=None, address=[], fields=[], to_json=False, show=None):
     """Overview:
         The `decryptWalletEntries` function is designed to decrypt wallet entries stored within a specified file, 
         implementing an intricate decryption process with the collaboration of multiple helper functions.
@@ -840,7 +1192,6 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
         Returns:
         - dict or str: If "pretty" is True, returns a prettified JSON string. Otherwise, returns a dictionary of decrypted wallet entries and fields.
     """
-    
     #Make sure that the wallet directories exists
     ensure_wallet_directories_exist()
     
@@ -898,7 +1249,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
             mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
         else:
             mnemonic = data["wallet_data"]["entry_data"]["master_mnemonic"]
-        
+            
     # List to hold decrypted wallet entries
     decrypted_entries = []
 
@@ -954,7 +1305,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
                         generated_data["is_import"] = is_import
                     # Update the decrypted entry with the generated data
                     fully_decrypted_entry.update(generated_data)        
-                    if 'send' in sys.argv:
+                    if 'send' in sys.argv or 'generatepaperwallet' in sys.argv:
                         print(f"\rDecrypting wallet entry {entry_count} of {index + imported_entries_length} | Address: {generated_data['address']}", end='')
                         if address[0] in fully_decrypted_entry['address']:
                             print("\nAddress Found.\n")
@@ -1063,8 +1414,11 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
             del entry["is_import"]
             decrypted_entries.remove(entry)
     
+    if not is_encrypted and not all(addr in addresses_to_exclude for addr in all_decrypted_addresses) and not "balance" in sys.argv and not "send" in sys.argv and not "paperwallet" in sys.argv:
+        print("Wallet data does not appear to be encrypted. Returning un-encrypted data.\n")
+
     # Convert the decrypted entries to a readable format based on the `pretty` flag
-    if pretty:
+    if to_json:
         if "mnemonic" in fields and deterministic:
             formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries}}, indent=4)
             if len(imported_entries) > 0:
@@ -1073,34 +1427,131 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
             formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries}}, indent=4)
             if len(imported_entries) > 0:
                 formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries, "imported_entries": imported_entries}}, indent=4)
-    else:
-        if "mnemonic" in fields and deterministic:
-            formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries}})
-            if len(imported_entries) > 0:
-                formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries, "imported_entries": imported_entries}})
+        
+        # Convert JSON string back to dictionary
+        formatted_output = json.loads(formatted_output)
+    
+        # Remove 'entries' key if empty and imported entries are only being returned
+        if show == "imported" and formatted_output["entry_data"].get("entries") == []:
+            del formatted_output["entry_data"]["entries"]    
+        
+        # Convert back to JSON string
+        if to_json:
+            formatted_output = json.dumps(formatted_output, indent=4)
         else:
-            formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries}})
-            if len(imported_entries) > 0:
-                formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries, "imported_entries": imported_entries}})
+            formatted_output = json.dumps(formatted_output)
+            
+        result = formatted_output
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])    
+        return result    
+    else:
+        print(f"Wallet Data for: {filename}")
+        if len(decrypted_entries) > 0:
+            print("--------------------------------Internally Generated Entries--------------------------------")   
+            if "mnemonic" in fields and deterministic:
+                print(f"Master Mnemonic: {mnemonic}\n")
+            for entry in decrypted_entries:
+                for key, value in entry.items():
+                    if key == 'id':
+                        formatted_key = 'Wallet Entry'
+                        print(f"{formatted_key} #{value}:")
+                    else:
+                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
+                        print(f"{formatted_key}: {value}")
+                print()         
+        if len(imported_entries) > 0:
+            print("--------------------------------------Imported Entries--------------------------------------")
+            for entry in imported_entries:
+                for key, value in entry.items():
+                    if key == 'id':
+                        formatted_key = 'Imported Entry'
+                        print(f"{formatted_key} #{value}:")
+                    else:
+                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
+                        print(f"{formatted_key}: {value}")
+                print()   
     
-    # Convert JSON string back to dictionary
-    formatted_output = json.loads(formatted_output)
-
-    # Remove 'entries' key if empty and imported entries are only being returned
-    if show == "imported" and formatted_output["entry_data"].get("entries") == []:
-        del formatted_output["entry_data"]["entries"]    
+def generatePaperWallet(filename, password, totp_code, address, private_key, file_type):
+    try:
+        address_data, private_key_data = get_address_and_private_key(filename, password, totp_code, address, private_key)
+        
+        if not private_key_data or not address_data:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None
     
-    # Convert back to JSON string
-    formatted_output = json.dumps(formatted_output, indent=4)
+        private_key_qr = PaperWalletGenerator.generate_qr_code(private_key_data)
+        public_address_qr = PaperWalletGenerator.generate_qr_code(address_data)
+        final_image = PaperWalletGenerator.overlay_qr_code(private_key_qr, public_address_qr, private_key_data, address_data, file_type)
+    
+        if private_key and not filename:
+            filename = address_data
+    
+        file_directory = os.path.join(os.path.dirname(filename), "wallets/paper_wallets")
+        ensure_wallet_directories_exist(custom=file_directory)
+        
+        if not os.path.exists("./wallets/paper_wallets/paper_wallet_back.png") and file_type.lower() == 'png':
+            shutil.copy("./denaro/wallet/paper_wallet_back.png", "wallets/paper_wallets")
+        
+        if not private_key:
+            wallet_name = os.path.splitext(os.path.basename(filename))[0]
+            file_directory = os.path.join(file_directory, wallet_name)
+            ensure_wallet_directories_exist(custom=file_directory)
+    
+        if file_type.lower() == 'png':
+            file_path = os.path.join(file_directory, f"{address_data}_paper_wallet_front.png")
+            final_image.save(file_path)
+            
+        elif file_type.lower() == 'pdf':
+            file_path = os.path.join(file_directory, f"{address_data}_paper_wallet.pdf")
+            c = canvas.Canvas(file_path, pagesize=letter)
+            width, height = letter  # Letter size in points
+    
+            # Function to process image with transparency
+            def process_image(image):
+                if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
+                    background = Image.new("RGB", image.size, (255, 255, 255))
+                    background.paste(image, mask=image.split()[3])  # Use alpha channel as mask
+                    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not background])
+                    return background
+                else:
+                    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not image])
+                    return image
+    
+            # Save and scale the front image
+            temp_front_path = file_path.replace('.pdf', '.temp_front.png')
+            front_image = process_image(final_image)
+            front_image.save(temp_front_path)
+            front_img = Image.open(temp_front_path)
+            scale = min(width / front_img.width, height / front_img.height)
+            c.drawImage(temp_front_path, 0, height - front_img.height * scale, width=front_img.width * scale, height=front_img.height * scale)
+            c.showPage()
+    
+            # Save and scale the second image
+            temp_back_path = file_path.replace('.pdf', '.temp_back.png')
+            second_image_path = "./denaro/wallet/paper_wallet_back.png"
+    
+            with Image.open(second_image_path) as back_img:
+                back_image = process_image(back_img)
+                back_image.save(temp_back_path)
 
-
-    result = formatted_output
-    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
-
-    if not is_encrypted and not all(addr in addresses_to_exclude for addr in all_decrypted_addresses) and not "balance" in sys.argv and not "send" in sys.argv:
-        print("Wallet data does not appear to be encrypted. Returning un-encrypted data.\n")
-
-    return result
+            back_img = Image.open(temp_back_path)
+            scale = min(width / back_img.width, height / back_img.height)
+            c.drawImage(temp_back_path, 0, height - back_img.height * scale, width=back_img.width * scale, height=back_img.height * scale)
+    
+            # Clean up temporary files and save PDF
+            os.remove(temp_front_path)
+            os.remove(temp_back_path)
+            c.save()
+        
+        if os.path.exists(file_path):
+            print(f"\nPaper wallet successfully generated at: {file_path}")
+        else:
+            logging.error(f"Error in generating paper wallet: {e}")
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        
+    except Exception as e:
+        logging.error(f"Error in generating paper wallet: {e}")
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
 
 #Transaction Functions
 def validate_and_select_node(node):
@@ -1143,18 +1594,70 @@ def initialize_wallet(filename):
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
 
-def checkBalance(filename, password, totp_code, address, node, to_json, to_file, show=None):
-    """
-    Checks the balance of cryptocurrency addresses.
+def get_address_and_private_key(filename, password, totp_code, address, private_key):
+    encrypted = False
+    address_pattern = r'^[DE][1-9A-HJ-NP-Za-km-z]{44}$'
+    
+    if filename and address and not private_key:
+        #Validate wallet address using regex pattern        
+        if not re.match(address_pattern, address):
+             logging.error("The wallet address provided is not valid.")
+             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+             return None, None
+    
+        wallet_exists, filename, encrypted = initialize_wallet(filename)
+        if not wallet_exists:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None, None
 
-    :param filename: The wallet file name.
-    :param password: The password for the wallet file.
-    :param totp_code: The Time-based One-Time Password for additional security.
-    :param address: The cryptocurrency address or list of addresses to check.
-    :param node: The node to use for balance checking.
-    :param to_json: Flag to determine if output should be in JSON format.
-    :return: None or JSON data.
-    """
+        # If wallet is encrypted and password is not provided, log an error
+        if encrypted and not password:
+            logging.error("Wallet is encrypted. A password is required.")
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None, None
+
+        decrypted_data = decryptWalletEntries(filename=filename, password=password, totp_code=totp_code if totp_code else "", address=[address], fields=['private_key'], to_json=True)
+
+        if decrypted_data is not None:
+            decrypted_data = json.loads(decrypted_data)
+            entry_data = decrypted_data.get('entry_data', {})        
+            
+            # Check 'entries' and extract the private key if available
+            entries = entry_data.get('entries')
+            if entries and isinstance(entries, list) and len(entries) > 0:
+                private_key = entries[0].get('private_key')        
+            
+            # If not found in 'entries', check 'imported_entries'
+            if not private_key:
+                imported_entries = entry_data.get('imported_entries')
+                if imported_entries and isinstance(imported_entries, list) and len(imported_entries) > 0:
+                    private_key = imported_entries[0].get('private_key')
+        
+        if private_key is None:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None, None
+
+    if not filename and private_key:
+        # Validate private key using regex pattern
+        private_key_pattern = r'^(0x)?[0-9a-fA-F]{64}$'
+        if not re.match(private_key_pattern, private_key):
+            logging.error("The private key provided is not valid.")
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None, None
+        
+        # Remove 0x prefix from private key if it exists 
+        if private_key.startswith('0x'):
+            private_key = private_key[2:]
+
+        # Generate sending address from private key
+        generated_address = generate_from_private_key(private_key_hex=private_key, fields=["address"])
+        address = generated_address['address']
+    
+    result = address, private_key
+    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+    return result
+
+def checkBalance(filename, password, totp_code, address, node, to_json, to_file, show=None, currency_code=None, currency_symbol=None):
     # Select a valid node
     node = validate_and_select_node(node)
     if node is None:
@@ -1175,15 +1678,16 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
             return None
         
         # Decrypt wallet entries
-        address_data = decryptWalletEntries(filename=filename, password=password, totp_code=totp_code if totp_code else "", address=address if address else [], fields=['address','id', "is_import"], pretty=False, show=show)
+        address_data = decryptWalletEntries(filename=filename, password=password, totp_code=totp_code if totp_code else "", address=address if address else [], fields=['address','id', "is_import"], to_json=True, show=show)
         if not address_data:
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return None
+        
         entry_data = json.loads(address_data)['entry_data']
         total_balance = 0
         total_pending = 0
         is_import = False
-        
+
         if show:
             if "imported" in show:
                 if "imported_entries" in entry_data and "entries" in entry_data:
@@ -1193,10 +1697,21 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                 if "imported_entries" in entry_data:
                     del entry_data["imported_entries"]
 
+        # Get price data and convert to Decimal
+        formatted_price = get_price_info(currency_code)
+        if formatted_price:
+            formatted_price = Decimal(str(formatted_price))
+        else:
+            formatted_price = Decimal('0')
+            currency_code = "USD"
+            currency_symbol = "$"
+
+        formatted_price_str = "{:.8f}".format(formatted_price)
+
         if entry_data is not None:                    
-            if not to_json:
+            if not to_json and not to_file:
                 # Print balance information
-                print(f"Balance Information For: {filename}")
+                print(f"\nDNR/{currency_code} Price: {currency_symbol}{formatted_price_str} {'(Calculated from USD)' if not currency_code == 'USD' else ''}\nBalance Information For: {filename}")
                 print("-----------------------------------------------------------")
                 for entry_feild in entry_data:
                     if entry_feild == "imported_entries":
@@ -1205,18 +1720,30 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                         id = entry['id']
                         address = entry['address']
                         balance, pending_balance, is_error = get_balance_info(address, node)
+                        # Convert balance to Decimal and perform multiplication
+                        balance_decimal = Decimal(str(balance))
+                        balance_value = balance_decimal * formatted_price
+                        # Format the balance value as a regular decimal string
+                        formatted_balance_value = "{:.7f}".format(balance_value)
                         if is_error:
                             break
                         total_balance += balance
                         total_pending += pending_balance
-                        print(f'{"Imported " if is_import else ""}Address #{id}: {address}\nBalance: {balance} DNR{f" (Pending: {pending_balance} DNR)" if pending_balance != 0 else ""}\n')
+                        # Output the balance in DNR and its value in the chosen currency                  
+                        print(f'{"Imported " if is_import else ""}Address #{id}: {address}\nBalance: {balance} DNR{f" (Pending: {pending_balance} DNR)" if pending_balance != 0 else ""}\n{currency_code} Value: {currency_symbol}{formatted_balance_value}\n')
                 print("\033[F-----------------------------------------------------------")
-                print(f'Total Balance: {total_balance} DNR')
+                # Convert total_balance to Decimal
+                total_balance_decimal = Decimal(str(total_balance))
+                total_balance_value = total_balance_decimal * formatted_price
+                # Format the total balance value as a regular decimal string
+                formatted_total_balance_value = "{:.7f}".format(total_balance_value)
+
+                print(f'Total Balance: {total_balance} DNR\nTotal {currency_code} Value: {currency_symbol}{formatted_total_balance_value}')
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             
             if to_json or to_file:
                 # Prepare JSON data
-                balance_data = {"balance_data": {"wallet_file_path": filename, "wallet_version":"0.2.2", "addresses": [], "imported_addresses" : [], "lastUpdated": datetime.utcnow().isoformat() + "Z"}}
+                balance_data = {"balance_data": {"wallet_file_path": filename, "wallet_version":"0.2.2", "addresses": [], "imported_addresses" : [], f"exchange_rate":f'{currency_symbol}{formatted_price}',"total_balance":"", f"total_{currency_code.lower()}_value":"", "lastUpdated": datetime.utcnow().isoformat() + "Z"}}
 
                 if not "imported_entries" in entry_data or entry_data["imported_entries"] == []:
                     del balance_data["balance_data"]["imported_addresses"]
@@ -1230,6 +1757,7 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                     for entry in entry_data[entry_feild]:
                         address = entry['address']
                         balance, pending_balance, is_error = get_balance_info(address, node)
+                        total_balance += balance
                         if is_error:
                             break
                         if not is_import:
@@ -1238,7 +1766,8 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                                 "address": address,
                                 "balance": {
                                     "currency" : "DNR",
-                                    "amount" : str(balance)
+                                    "amount" : str(balance),
+                                    f"{currency_code.lower()}_value": f'{currency_symbol}{round(balance * formatted_price, 6)}'
                                 }
                             })
                         else:
@@ -1247,11 +1776,14 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                                 "address": address,
                                 "balance": {
                                     "currency" : "DNR",
-                                    "amount" : str(balance)
+                                    "amount" : str(balance),
+                                    f"{currency_code.lower()}_value": f'{currency_symbol}{round(balance * formatted_price, 6)}'
                                 }
                             })
+                balance_data['balance_data']['total_balance'] = str(total_balance)+" DNR"
+                balance_data['balance_data'][f'total_{currency_code.lower()}_value'] = f'{currency_symbol}{str(round(total_balance * formatted_price, 6))}'
                 if to_json:
-                    print(json.dumps(balance_data, indent=4))
+                    print(json.dumps(balance_data, indent=4,ensure_ascii=False))
                 if to_file:
                     # Define the file path and name
                     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -1271,64 +1803,26 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
         
                     # Save the balance data to file
                     with open(file_path, 'w') as file:
-                        json.dump(balance_data, file, indent=4)
+                        json.dump(balance_data, file, indent=4,ensure_ascii=False)
         
                     print(f"\nBalance information saved to file: {file_path}")
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         else:
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return None
-
+      
 def prepareTransaction(filename, password, totp_code, amount, sender, private_key, receiver, message, node):
     
     node = validate_and_select_node(node)
     if node is None:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        return None
-
-    encrypted = False
-    address_pattern = r'^[DE][1-9A-HJ-NP-Za-km-z]{44}$'
-    if filename and sender and not private_key:
-
-        #Validate wallet address using regex pattern        
-        if not re.match(address_pattern, sender):
-             logging.error("The wallet address provided is not valid.")
-             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-             return None
+        return None   
     
-        wallet_exists, filename, encrypted = initialize_wallet(filename)
-        if not wallet_exists:
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None
-
-        # If wallet is encrypted and password is not provided, log an error
-        if encrypted and not password:
-            logging.error("Wallet is encrypted. A password is required.")
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None
-
-        decrypted_data = decryptWalletEntries(filename=filename, password=password, totp_code=totp_code if totp_code else "", address=[sender], fields=['private_key'], pretty=False)
-        if not decrypted_data is None:
-            decrypted_data = json.loads(decrypted_data)
-            private_key = decrypted_data['entry_data']['entries'][0]['private_key']
-        
-        if private_key is None:
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None
-
-    if not filename and private_key:
-        # Validate private key using regex pattern
-        private_key_pattern = r'^(0x)?[0-9a-fA-F]{64}$'
-        if not re.match(private_key_pattern, private_key):
-            logging.error("The private key provided is not valid.")
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None
-        # Remove 0x prefix from private key if it exists 
-        if private_key.startswith('0x'):
-            private_key = private_key[2:]
-        # Generate sending address from private key
-        generated_address = generate_from_private_key(private_key_hex=private_key, fields=["address"])
-        sender = generated_address['address']
+    sender, private_key = get_address_and_private_key(filename, password, totp_code, sender, private_key)
+    
+    if not private_key:
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        return None
     
     # Convert private key to int
     private_key = int(private_key, 16)
@@ -1341,6 +1835,7 @@ def prepareTransaction(filename, password, totp_code, amount, sender, private_ke
     except ValueError:
         message = message.encode('utf-8')
     
+    address_pattern = r'^[DE][1-9A-HJ-NP-Za-km-z]{44}$'
     #Validate receiving address using regex pattern        
     if not re.match(address_pattern, receiver):
         logging.error("The recieving address is not valid.")
@@ -1552,7 +2047,7 @@ def get_balance_info(address: str, node: str):
 
         # Format the total balance and pending balance to remove unnecessary trailing zeros
         formatted_total_balance = total_balance.quantize(Decimal('0.000001'), rounding=ROUND_DOWN)
-        formatted_pending_balance = pending_balance.quantize(Decimal('0.000001'), rounding=ROUND_DOWN)
+        formatted_pending_balance = pending_balance.quantize(Decimal('0.000001'), rounding=ROUND_DOWN)        
         
         balance_data = formatted_total_balance, formatted_pending_balance, False
         DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not balance_data])
@@ -1576,6 +2071,63 @@ def get_balance_info(address: str, node: str):
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, True
 
+def get_price_info(currency_code=None):
+    """
+    Fetches and calculates the price of DNR in the specified currency.
+    """
+    try:
+        # Validate or set default currency code
+        if not currency_code:
+            currency_code = 'USD'
+        currency_code = currency_code.upper()
+
+        try:
+            # CoinMarketCap API request
+            cmc_url = 'https://api.coinmarketcap.com/dexer/v3/dexer/pair-info?dexer-platform-name=bsc&address=0x638da797f50131c7f8fe1b0de864acee773d0bab&t=1705093806632'
+            cmc_response = requests.get(cmc_url)
+            cmc_response.raise_for_status()
+            price_usd = Decimal(cmc_response.json()['data']['priceUsd']).quantize(Decimal('0.0000001'))
+        
+        except requests.RequestException:
+            # Fallback URL if the first request fails
+            fallback_url = 'https://cmc-api.denaro.is/price'
+            fallback_response = requests.get(fallback_url)
+            fallback_response.raise_for_status()
+            price_usd = Decimal(fallback_response.json()['USD']).quantize(Decimal('0.00000001'))         
+
+        # Early return for USD
+        if currency_code == 'USD':
+            return price_usd
+
+        # Exchange rate for fiat currencies
+        currency_exchange_rate_url = 'https://open.er-api.com/v6/latest/USD'
+        currency_response = requests.get(currency_exchange_rate_url)
+        currency_response.raise_for_status()
+        rates = currency_response.json()['rates']
+
+        if currency_code in rates:
+            currency_exchange_rate = Decimal(rates[currency_code]).quantize(Decimal('0.01'))
+            return price_usd * currency_exchange_rate
+
+        # Exchange rate for cryptocurrencies
+        cryptocurrency_exchange_rate_url = 'https://api.coincap.io/v2/assets'
+        crypto_response = requests.get(cryptocurrency_exchange_rate_url)
+        crypto_response.raise_for_status()
+        crypto_data = crypto_response.json()['data']
+
+        amount = next((Decimal(item['priceUsd']).quantize(Decimal('0.0000001')) for item in crypto_data if item['symbol'] == currency_code), None)
+        if amount:
+            return price_usd / amount
+
+        return Decimal('0')
+
+    except requests.RequestException as e:
+        #logging.error(f"Request Error: {e}")
+        return Decimal('0')
+    except Exception as e:
+        #logging.error(f"General Error: {e}")
+        return Decimal('0')
+    
 # Argparse Helper Functions
 def sort_arguments_based_on_input(argument_names):
     """
@@ -1626,18 +2178,19 @@ def check_args(parser, args):
             Utilizes the `sort_arguments_based_on_input` function to display arguments in the
             order in which they were passed in the command line.
     """
-    if args.command == "generatewallet":
+    if args.command == "wallet":
         # -deterministic, -2fa, and -encrypt requires -password
+            
         if args.deterministic and args.tfa and args.encrypt and not args.password:
-            sorted_args = sort_arguments_based_on_input(['-deterministic', '-2fa', '-encrypt', '-password'])
+            sorted_args = sort_arguments_based_on_input(['-deterministic','-phrase', '-2fa', '-encrypt', '-password'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\nContext: A password is required to encrypt the wallet, enable 2-Factor Authentication, and for deterministic address generation.")
+            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required to encrypt the wallet, enable 2-Factor Authentication, and for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
     
         # -2fa and -encrypt requires -password
         if args.tfa and args.encrypt and not args.password:
             sorted_args = sort_arguments_based_on_input(['-2fa', '-encrypt', '-password'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\nContext: A password is required for encrypted wallets with 2-Factor Authentication enabled.")
+            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required for encrypted wallets with 2-Factor Authentication enabled.")
     
         # -2fa requires both -encrypt and -password
         if args.tfa and (not args.encrypt or not args.password):
@@ -1650,48 +2203,48 @@ def check_args(parser, args):
             
             # -2fa and -deterministic requires both -encrypt and -password
             if args.deterministic:
-                sorted_args = sort_arguments_based_on_input(['-2fa', '-deterministic', '-encrypt', '-password'])
+                sorted_args = sort_arguments_based_on_input(['-2fa', '-deterministic','-phrase', '-encrypt', '-password'])
                 if not args.password:
-                    context_str += " Deterministic address generation also requires a password."
+                    context_str += f" Deterministic address generation {'using the provided mnemonic' if args.phrase else ''} also requires a password."
 
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args and var is not context_str])
-            parser.error(f"{sorted_args} requires both the -encrypt and -password arguments to be set.\nContext: {context_str}")
+            parser.error(f"{sorted_args} requires both the -encrypt and -password arguments to be set.\n\nContext: {context_str}")
     
         # -encrypt and -deterministic requires -password
         if args.encrypt and args.deterministic and not args.password:
-            sorted_args = sort_arguments_based_on_input(['-encrypt', '-deterministic', '-password'])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\nContext: A password is required to encrypt the wallet and for deterministic address generation.")
-    
+            sorted_args = sort_arguments_based_on_input(['-encrypt', '-deterministic','-phrase', '-password'])
+            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required to encrypt the wallet and for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
+
         # -deterministic alone requires -password
         if args.deterministic and not args.password:
-            sorted_args = sort_arguments_based_on_input(['-deterministic', '-password'])
+            sorted_args = sort_arguments_based_on_input(['-deterministic','-phrase', '-password'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\nContext: A password is required for deterministic address generation.")
+            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
     
         # -encrypt alone requires -password
         if args.encrypt and not args.password:
             sorted_args = sort_arguments_based_on_input(['-encrypt', '-password'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\nContext: A password is required to encrypt the wallet.")
+            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required to encrypt the wallet.")
 
-    if args.command == "send":
+    if args.command == "send" or args.command == "paperwallet":
         # -wallet and -private-key cannot be used together
         if args.wallet and args.private_key:
             sorted_args = sort_arguments_based_on_input(['-wallet', '-private-key'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} cannot be used together.\nContext: The script automatically retrieves the private key of the specified address from the wallet file. The -private-key arguemnt is unnessesary in this instance.")
+            parser.error(f"{sorted_args} cannot be used together.\n\nContext: The script automatically retrieves the private key of the specified address from the wallet file. The -private-key option is unnessesary in this instance.")
         
         # -wallet requires -address
-        if args.wallet and not args.sender:
+        if args.wallet and not args.address:
             sorted_args = sort_arguments_based_on_input(['-wallet', '-address'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -address argument to be set.\nContext: An address that is associated with the wallet file must be specified.")
+            parser.error(f"{sorted_args} requires the -address argument to be set.\n\nContext: An address that is associated with the wallet file must be specified.")
         
         # -address requires -wallet
-        if args.sender and not args.wallet:
+        if args.address and not args.wallet:
             sorted_args = sort_arguments_based_on_input(['-address', '-wallet'])
             DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -wallet argument to be set.\nContext: A wallet file must be specified in order to use the given address. The address should also be associated with the wallet file.")
+            parser.error(f"{sorted_args} requires the -wallet argument to be set.\n\nContext: A wallet file must be specified in order to use the given address. The address should also be associated with the wallet file.")
 
 def process_decryptwallet_filter(args):
     """Overview:
@@ -1723,53 +2276,11 @@ def process_decryptwallet_filter(args):
     addresses = []
     field = []
     fields_to_string = ""  
-    filter_subparser_pretty = False
     filter_subparser_show = None
+
     if not args.command == 'balance':
-        if args.filter:
-            # Check if the filter argument is enclosed in quotes
-            # This is necessary to ensure that the argument is parsed correctly
-            filter_args = [item.replace("-filter=", "") for item in sys.argv[1:] if "-filter" in item]
-            using_quotes = len(filter_args) == 1        
-            # If quotes are not used, raise an error
-            if not using_quotes:
-                raise argparse.ArgumentTypeError("Invalid filter syntax. The -filter argument must be enclosed in quotes.")
-            
-            # Manually parse the args.filter string into a dictionary to check key spelling
-            parsed_filter_keys = []
-            for part in args.filter.split(','):
-                if '=' in part:
-                    key, _ = part.split('=')
-                    parsed_filter_keys.append(key)
-            
-            # List of valid keys for filtering
-            valid_keys = ["address", "field"]
-    
-            # Raise an error if an invalid key is found
-            for key in parsed_filter_keys:
-                if key not in valid_keys:
-                    raise argparse.ArgumentTypeError(f"Invalid filter key: '{key}'. Valid keys are {valid_keys}.")
-            
-            # Validate the syntax of the filter argument
-            filter_str = args.filter
-            valid, error = validate_filter_string(filter_str)
-            if not valid:
-                raise argparse.ArgumentTypeError(error)
-    
-            # Extract the values for 'address' and 'field' from the filter argument
-            address_match = re.search(r'address=\{(.+?)\}', filter_str)
-            field_match = re.search(r'field=\{(.+?)\}', filter_str)
-    
-            # Assign values to 'address' and 'field' variables
-            if address_match:
-                addresses = address_match.group(1).split(',')
-            if field_match:
-                field = field_match.group(1).split(',')
-                fields_to_string = ", ".join(field)        
-        
         # Handle the case when the 'filter' subparser is used
         if args.filter_subparser == 'filter':
-            filter_subparser_pretty = args.filter_subparser_pretty
             filter_subparser_show = args.filter_subparser_show
             if args.address:
                 addresses = args.address.split(',')
@@ -1777,100 +2288,65 @@ def process_decryptwallet_filter(args):
                 field = args.field.split(',')
                 fields_to_string = ", ".join(field)
     
-        # If no subparser is used, set pretty printing to False
+        # If no subparser is used, set show to None
         elif args.filter_subparser != 'filter':
-            args.filter_subparser_pretty = False
             args.filter_subparser_show = None
+
         # Validate the field values against a list of valid options
         valid_fields = ["id","mnemonic", "private_key", "public_key", "address"]
+        invalid_fields = []
+        
+        #Handle field validation
         if field:
             for f in field:
                 if f not in valid_fields:
-                    raise ValueError(f"Invalid field value: {f}. Must be one of {valid_fields}")
+                    invalid_fields.append(f)                    
+            for f in invalid_fields:
+                field.remove(f)
+            #Remove duplicate fields
+            seen_fields = set() # A set to keep track of seen elements
+            unique_fields = [] # A list to store the unique elements        
+            for item in field:
+                if item not in seen_fields:
+                    seen_fields.add(item) # Add unseen item to the set
+                    unique_fields.append(item) # Append unseen item to the unique_fields list
+            field = unique_fields
+            fields_to_string = ", ".join(field)
+        if len(invalid_fields) > 0:
+            logging.error(f"Invalid field value{'s' if len(invalid_fields) > 1 else ''}: {invalid_fields}. Must be one of {valid_fields}\n")
     else:
         if args.address:
-            addresses = args.address.split(',')
-    
-    #Remove duplicate addresses
+            addresses = args.address.split(',')   
+
+    # Remove duplicate addresses including hyphenated duplicates
     seen_addresses = set()
     addresses = [entry for entry in addresses if entry not in seen_addresses and not seen_addresses.add(entry)]
     addresses = remove_duplicates_from_address_filter(addresses)
     
-    #Validate addresses using regex pattern
+    # Validate addresses using regex pattern
     address_pattern = r'^-?[DE][1-9A-HJ-NP-Za-km-z]{44}$'
     valid_addresses = [addr for addr in addresses if re.match(address_pattern, addr)]
     invalid_addresses = [addr for addr in addresses if addr not in valid_addresses]
+
     if len(invalid_addresses) >= 1:
         print(f"Warning: The following {'address is' if len(invalid_addresses) == 1 else 'addresses are'} not valid: {invalid_addresses}")
         if not len(valid_addresses) >=1:
             print()
+    
     addresses = valid_addresses
+    new_line = '\n'
 
     # Output the filtering criteria to the console
-    if addresses and not field:
-        print(f'Filtering wallet by address: "{addresses}"\n')
-    if not addresses and field:
-        print(f'Filtering entries by field: "{fields_to_string}"\n')
-    if addresses and field:
-        print(f'Filtering wallet by address: "{addresses}"\n')
-        print(f'Filtering address entry by field: "{fields_to_string}"\n')
-    # Return the filtering criteria and pretty printing option
-    return addresses, field, filter_subparser_pretty, filter_subparser_show
-
-def validate_filter_string(input_string):
-    """Overview:
-        Validates the input string based on specific formatting rules for 'field' and 'address'.
-        1. Checks basic syntax using regular expression.
-        2. Checks for duplicate keys within each field set.
-        3. Checks for multiple occurrences of 'address' and 'field'.
-        
-        Parameters:
-            input_string (str): The string to be validated.
-            
-        Returns:
-            bool: True if the string is valid, False otherwise.
-            str: A message indicating why the validation failed, or 'Valid' if it succeeded.
-    """
-    # Basic syntax check using regex
-    #pattern = re.compile(r'^(?:(field=\{[\w\d,]+\})|(address=\{[\w\d]+\}))(?:,(?!.*\1)(field=\{[\w\d,]+\}|address=\{[\w\d]+\}))?$')
-    pattern = re.compile(r'^(?:(field=\{[\w\d,]+\})|(address=\{[\-\w\d,]+\}))(?:,(?!.*\1)(field=\{[\w\d,]+\}|address=\{[\-\w\d,]+\}))?$')
-    match = pattern.match(input_string)
-    if not match:
-        return False, f"Invalid filter syntax: {input_string}"
+    if addresses:
+        print(f'Filtering wallet by address: "{", ".join(addresses)}"{new_line if not field and not filter_subparser_show else ""}')
+    if field:
+        print(f'Filtering wallet by field: "{fields_to_string}"{new_line if not filter_subparser_show else ""}')
+    if filter_subparser_show:
+        print(f'Filtering wallet by "{filter_subparser_show}" entries.\n')
     
-    # Count occurrences of 'address' and 'field'
-    address_count = 0
-    field_count = 0
-
-    # Iterate over each segment (either 'field={...}' or 'address={...}')
-    for segment in re.finditer(r'(field=\{[\w\d,]+\})|(address=\{[\w\d]+\})', input_string):
-        segment = segment.group()
-        key, value = segment.split("=")
-        # Remove braces from value
-        value = value[1:-1]
-        
-        # Check for duplicate keys in 'field'
-        if key == 'field':
-            field_count += 1
-            keys = value.split(",")
-            duplicates = [item for item, count in Counter(keys).items() if count > 1]
-            if duplicates:
-                return False, f"Duplicate keys found in 'field': {', '.join(duplicates)}"
-
-        # Count occurrences of 'address'
-        if key == 'address':
-            address_count += 1
-
-    # Check for multiple occurrences of 'address' or 'field'
-    if address_count > 1:
-        return False, "Multiple occurrences of 'address' found"
-    if field_count > 1:
-        return False, "Multiple occurrences of 'field' found"
-    # Check for multiple occurrences of 'address' or 'field'
-    if address_count > 1 and field_count > 1:
-        return False, "Multiple occurrences of 'address' and 'field' found"
-                
-    return True, "Valid"
+    result = addresses, field, filter_subparser_show
+    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+    return result
 
 def remove_duplicates_from_address_filter(address_list):
     """Overview:
@@ -1912,6 +2388,42 @@ def remove_duplicates_from_address_filter(address_list):
                 
     return deduplicated_list
 
+def is_valid_currency_code(code):
+    valid_codes = {
+        # International Currencies
+        "AED": "د.إ", "AFN": "؋", "ALL": "L", "AMD": "֏", "ANG": "ƒ", "AOA": "Kz", "ARS": "$", "AUD": "$", "AWG": "ƒ", 
+        "AZN": "₼", "BAM": "KM", "BBD": "$", "BDT": "৳", "BGN": "лв", "BHD": ".د.ب", "BIF": "FBu", "BMD": "$", "BND": "$", 
+        "BOB": "Bs.", "BRL": "R$", "BSD": "$", "BTN": "Nu.", "BWP": "P", "BYN": "Br", "BZD": "$", "CAD": "$", "CDF": "FC", 
+        "CHF": "Fr", "CLP": "$", "CNY": "¥", "COP": "$", "CRC": "₡", "CUP": "$", "CVE": "$", "CZK": "Kč", "DJF": "Fdj", 
+        "DKK": "kr", "DOP": "$", "DZD": "دج", "EGP": "£", "ERN": "Nfk", "ETB": "Br", "EUR": "€", "FJD": "$", "FKP": "£", 
+        "FOK": "kr", "GBP": "£", "GEL": "₾", "GGP": "£", "GHS": "₵", "GIP": "£", "GMD": "D", "GNF": "FG", "GTQ": "Q", 
+        "GYD": "$", "HKD": "$", "HNL": "L", "HRK": "kn", "HTG": "G", "HUF": "Ft", "IDR": "Rp", "ILS": "₪", "IMP": "£", 
+        "INR": "₹", "IQD": "ع.د", "IRR": "﷼", "ISK": "kr", "JEP": "£", "JMD": "$", "JOD": "د.ا", "JPY": "¥", "KES": "Sh", 
+        "KGS": "с", "KHR": "៛", "KID": "$", "KMF": "CF", "KRW": "₩", "KWD": "د.ك", "KYD": "$", "KZT": "₸", "LAK": "₭", 
+        "LBP": "ل.ل", "LKR": "₨", "LRD": "$", "LSL": "L", "LYD": "ل.د", "MAD": "د.م.", "MDL": "L", "MGA": "Ar", "MKD": "ден", 
+        "MMK": "K", "MNT": "₮", "MOP": "P", "MRU": "UM", "MUR": "₨", "MVR": "Rf", "MWK": "MK", "MXN": "$", "MYR": "RM", 
+        "MZN": "MT", "NAD": "$", "NGN": "₦", "NIO": "C$", "NOK": "kr", "NPR": "₨", "NZD": "$", "OMR": "ر.ع.", "PAB": "B/.", 
+        "PEN": "S/.", "PGK": "K", "PHP": "₱", "PKR": "₨", "PLN": "zł", "PYG": "₲", "QAR": "ر.ق", "RON": "lei", "RSD": "дин", 
+        "RUB": "₽", "RWF": "FRw", "SAR": "ر.س", "SBD": "$", "SCR": "₨", "SDG": "ج.س.", "SEK": "kr", "SGD": "$", "SHP": "£", 
+        "SLL": "Le", "SOS": "Sh", "SRD": "$", "SSP": "£", "STN": "Db", "SVC": "$", "SYP": "£", "SZL": "L", "THB": "฿", 
+        "TJS": "ЅМ", "TMT": "m", "TND": "د.ت", "TOP": "T$", "TRY": "₺", "TTD": "$", "TVD": "$", "TWD": "NT$", "TZS": "Sh", 
+        "UAH": "₴", "UGX": "Sh", "USD": "$", "UYU": "$", "UZS": "лв", "VES": "Bs.", "VND": "₫", "VUV": "Vt", "WST": "T", 
+        "XAF": "FCFA", "XCD": "$", "XOF": "CFA", "XPF": "₣", "YER": "﷼", "ZAR": "R", "ZMW": "ZK", "ZWL": "$",
+        # Top 100 crpytocurrencies
+        'BTC' : '₿','ETH' : 'Ξ','USDT' : '₮','BNB' : '','SOL' : '','XRP' : '✕','USDC' : '','ADA' : '₳','AVAX' : '','DOGE' : 'Ð','DOT' : '●','TRX' : '',
+        'MATIC' : '','LINK' : '','WBTC' : '₿','ICP' : '','SHIB' : '','DAI' : '◈','LTC' : 'Ł','BCH' : 'Ƀ','XLM' : '*','UNI' : '','ALGO' : '','XMR' : 'ɱ',
+        'ATOM' : '','VET' : '','XTZ' : '','THETA' : 'ϑ','EOS' : 'ε','IOTA' : '','AAVE' : '','COMP' : '','CAKE' : '','MANA' : '','CRV' : '','FLOW' : '','MINA' : '',
+        'HNT' : '','HBAR' : '','FTM' : '','SAND' : '','AXS' : '','FTT' : '','KCS' : '','WEMIX' : '','SNX' : '','NEO' : '','KAVA' : '','ROSE' : '','CHZ' : '',
+        'WOO' : '','RPL' : '','GALA' : '','XEC' : '','FXS' : '','CFX' : '','KLAY' : '','XDC' : '','AR' : '','AKT' : '','FET' : '','CSPR' : '','1INCH' : '',
+        'GNO' : '','BUSD' : '','SC' : '','DYDX' : '','GT' : '','NEXO' : '','TWT' : '','BTG' : '','SKL' : '','ENJ' : '','FEI' : '','PENDLE' : '','CELO' : '',
+        'IOTX' : '','ELF' : '','GAS' : '','HT' : '','ZEC' : '','ZIL' : '','USDP' : ''
+    }
+    if code in valid_codes:
+        return True, valid_codes[code]
+    else:
+        print(f"{code} is not a valid currency code. Defaulting to USD.\n")
+        return False, "$"
+
 # Main Function
 def main():
     # Verbose parser for shared arguments
@@ -1923,112 +2435,157 @@ def main():
     denaro_node.add_argument('-node', type=str, help="Specifies the URL or IP address of a Denaro node.")
 
     # Create the parser
-    parser = argparse.ArgumentParser(description="Manage wallet data.")
+    parser = argparse.ArgumentParser(description="Manages wallets and transactions for the Denaro crypto-currency.")
     subparsers = parser.add_subparsers(dest='command')
-
-    # Subparser for generating a new wallet
-    parser_generatewallet = subparsers.add_parser('generatewallet', parents=[verbose_parser])
-    parser_generatewallet.add_argument('-wallet', required=True, help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_generatewallet.add_argument('-encrypt', action='store_true', help="Encrypt the new wallet.")
-    parser_generatewallet.add_argument('-2fa', dest='tfa', action='store_true', help="Enables 2FA for a new encrypted wallet.")
-    parser_generatewallet.add_argument('-password', help="Password used for wallet encryption and/or deterministic address generation.")
-    parser_generatewallet.add_argument('-deterministic', action='store_true', help="Generates a deterministic wallet.")
-    parser_generatewallet.add_argument('-backup', choices=['False', 'True'], help="Enable or disable backup of an existing wallet.")
-    parser_generatewallet.add_argument('-disable-overwrite-warning', dest='disable_overwrite_warning', action='store_true', help="Disable warning when overwriting an existing wallet.")
-    parser_generatewallet.add_argument('-overwrite-password', dest='overwrite_password', help="Password to overwrite an existing wallet that is encrypted.")
     
+    # Main parser for 'generate' command
+    parser_generate = subparsers.add_parser('generate', help="Generate wallets, addresses, or paper wallets", parents=[verbose_parser])
+    
+    # Create a single set of subparsers for 'generate'
+    generate_subparsers = parser_generate.add_subparsers(dest='command', required=True, help="Sub-commands for generating wallets, addresses, and paper wallets")
+    
+    # Subparser for generating a new wallet
+    parser_generatewallet = generate_subparsers.add_parser('wallet', help="Generates a new wallet with various options like encryption and 2FA", parents=[verbose_parser])
+    parser_generatewallet.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_generatewallet.add_argument('-encrypt', help="Enables encryption for new wallets.", action='store_true')
+    parser_generatewallet.add_argument('-2fa', help="Enables 2-Factor Authentication for new encrypted wallets.", dest='tfa', action='store_true')
+    parser_generatewallet.add_argument('-deterministic', help="Enables deterministic address generation for new wallets.", action='store_true')
+    parser_generatewallet.add_argument('-phrase', help="Generates a wallet based on a 12 word mnemonic phrase provdided by the user. The mnemonic phrase must be enclosed in quotation marks. This option also enables deterministic address generation, therefore password is required.")
+    parser_generatewallet.add_argument('-password', help="Password used for wallet encryption and/or deterministic address generation.")
+    parser_generatewallet.add_argument('-backup', help="Disables wallet backup warning when attempting to overwrite an existing wallet. A 'True' or 'False' parameter is required, and will specify if the wallet should be backed up or not.", choices=['False', 'True'])
+    parser_generatewallet.add_argument('-disable-overwrite-warning', help="Disables overwrite warning if an existing wallet is not backed up.", dest='disable_overwrite_warning', action='store_true')
+    parser_generatewallet.add_argument('-overwrite-password', help="Used to bypass the password confirmation prompt when overwriteing a wallet that is encrypted. A string paramter is required, and should specify the password used for the encrypted wallet.", dest='overwrite_password')
+
     # Subparser for generating a new address
-    parser_generateaddress = subparsers.add_parser('generateaddress', parents=[verbose_parser])
-    parser_generateaddress.add_argument('-wallet', required=True, help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_generateaddress.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_generateaddress.add_argument('-password', help="The password used for encryption and/or deterministic address generation of the specified wallet file.")
-    parser_generateaddress.add_argument('-amount', type=int, help="Specifies the amount of addresses to generate.")
+    parser_generateaddress = generate_subparsers.add_parser('address', help="Generate a new address for an existing wallet", parents=[verbose_parser])
+    parser_generateaddress.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_generateaddress.add_argument('-password', help="The password of the specified wallet. Required for encrypted and/or deterministic wallets.")
+    parser_generateaddress.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_generateaddress.add_argument('-amount', help="Specifies the amount of addresses to generate (Maximum of 256).", type=int)
+ 
+    # Subparser for generating a paper wallet
+    parser_generatepaperwallet = generate_subparsers.add_parser('paperwallet', help="Used to generate a Denaro paper wallet either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.", parents=[verbose_parser])
+    parser_generatepaperwallet.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.")
+    parser_generatepaperwallet.add_argument('-password', help="The password of the specified wallet. Required for wallets that are encrypted.")
+    parser_generatepaperwallet.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_generatepaperwallet.add_argument('-address', help="Specifies a Denaro address associated with the wallet file. A paper wallet will be generated for this Denaro address.")
+    parser_generatepaperwallet.add_argument('-private-key', help="Specifies the private key associated with a Denaro address. Not required if specifying an address from a wallet file.", dest='private_key')   
+    parser_generatepaperwallet.add_argument('-type', help="Specifies the file type for the paper wallet. The default filetype is PDF.", choices=['pdf','png'], default='pdf')
 
     # Subparser for decrypting the wallet
-    parser_decryptwallet = subparsers.add_parser('decryptwallet', parents=[verbose_parser])
-    parser_decryptwallet.add_argument('-wallet', required=True, help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_decryptwallet.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_decryptwallet.add_argument('-pretty', action='store_true', help="Prints formatted JSON output for enhanced readability.")
-    parser_decryptwallet.add_argument('-password', help="The password used for encryption of the specified wallet.")
-    parser_decryptwallet.add_argument('-filter', help='Filter entries by address and/or field. Add a hyphen (-) to the beginning of an address to exclude it. Format is: -filter="address={ADDRESS_1, ADDRESS_2, ADDRESS_3, ...},field={id,mnemonic,private_key,public_key,address}". The entire filter string must be enclosed in quotation marks and parameters must be enclosed in curly braces ("\u007B\u007D").', default=None)
-    
+    parser_decryptwallet = subparsers.add_parser('decryptwallet',help="Used to decrypt all entries in a wallet file, or selectivly decrypt specific entries based on a provided filter, and returns the decrypted data back to the console.", parents=[verbose_parser])
+    parser_decryptwallet.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_decryptwallet.add_argument('-password', help="The password of the specified wallet. Required for wallets that are encrypted.")
+    parser_decryptwallet.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_decryptwallet.add_argument('-json', help="Prints formatted JSON output for better readability.", action='store_true')
+        
     # Subparser for filter under decryptwallet
     filter_subparser = parser_decryptwallet.add_subparsers(dest='filter_subparser', required=False)
-    parser_filter = filter_subparser.add_parser('filter', parents=[verbose_parser], help="Filter entries by address and/or field")
-    parser_filter.add_argument('-address', help='One or more addresses to filter by. Add a hyphen (-) to the beginning of an address to exclude it. Format is: `address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`')
-    parser_filter.add_argument('-field', help='One or more fields to filter by. Format is: `field=id,mnemonic,private_key,public_key,address`.')
-    parser_filter.add_argument('-show', choices=['generated', 'imported'], dest="filter_subparser_show", help="Filters information based on entry origin. Use 'generated' to retrieve only the information of wallet entries that have been internally generated. Use 'imported' to retrieve only the information of wallet entries that have been imported.")    
-    parser_filter.add_argument('-pretty', action='store_true', dest="filter_subparser_pretty", help="Prints formatted JSON output for enhanced readability.")
-         
-    # Subparser for importing wallet data based on a private key
-    parser_import = subparsers.add_parser('import', parents=[verbose_parser])
-    parser_import.add_argument('-wallet', required=True, help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_import.add_argument('-password', help="The password used for encryption of the specified wallet.")
-    parser_import.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_import.add_argument('-private-key', dest='private_key', required=True, help="Specifies the private key to import.")
+    parser_filter = filter_subparser.add_parser('filter', help="Filters wallet entries by address, field, and/or origin", parents=[verbose_parser])
+    parser_filter.add_argument('-address', help='One or more addresses to filter by. Adding a hyphen `-` to the beginning of an address will exclude it from the output. Format is: `address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`')
+    parser_filter.add_argument('-field', help='One or more wallet entry fields to filter by. Format is: `field=id,mnemonic,private_key,public_key,address`.')
+    parser_filter.add_argument('-show', help="Filters wallet entries origin. 'generated' is used to retrieve only the information of internally generated wallet entries. 'imported' is used to retrieve only the information of imported wallet entries.", choices=['generated', 'imported'], dest="filter_subparser_show")    
     
+    # Subparser for importing wallet data based on a private key
+    parser_import = subparsers.add_parser('import',help="Used to import a wallet entry into a specified wallet file using the private key of a Denaro address.", parents=[verbose_parser])
+    parser_import.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_import.add_argument('-password', help="The password of the specified wallet. Required for wallets that are encrypted.")
+    parser_import.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_import.add_argument('-private-key', help="Specifies the private key associated with a Denaro address to import.", dest='private_key', required=True)
+
+    # Subparser for backing up wallet
+    parser_backupwallet = subparsers.add_parser('backupwallet',help="Used to create a backup of a wallet file.", parents=[verbose_parser])
+    parser_backupwallet.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_backupwallet.add_argument('-path', help="Specifies the directory to save the wallet backup file. Defaults to the `./wallets/wallet_backups/` directory if no specific filepath is provided.")
+
     # Subparser for sending a transaction
-    parser_send = subparsers.add_parser('send', parents=[verbose_parser, denaro_node])
-    parser_send.add_argument('-amount', required=True, help="The amount of Denaro to send.")    
+    parser_send = subparsers.add_parser('send',help="Main command to initiate a Denaro transaction.", parents=[verbose_parser, denaro_node])
+    parser_send.add_argument('-amount', required=True, help="Specifies the amount of Denaro to be sent.")    
     
     # Subparser to specify the wallet file and address to send from. The private key of an address can also be specified.
     send_from_subparser = parser_send.add_subparsers(dest='transaction_send_from_subparser', required=True)
-    parser_send_from = send_from_subparser.add_parser('from', parents=[verbose_parser, denaro_node])
-    parser_send_from.add_argument('-wallet', help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_send_from.add_argument('-password', help="The password used for encryption of the specified wallet.")
-    parser_send_from.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_send_from.add_argument('-address', dest='sender', help="Wallet address to send from.")
-    parser_send_from.add_argument('-private-key', dest='private_key', help="Specifies the private key associated with the address to send from. Not required if using a wallet file.")
+    parser_send_from = send_from_subparser.add_parser('from',help="Specifies the sender's details.", parents=[verbose_parser, denaro_node])
+    parser_send_from.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.")
+    parser_send_from.add_argument('-password', help="The password of the specified wallet. Required for wallets that are encrypted.")
+    parser_send_from.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_send_from.add_argument('-address', help="The Denaro address to send from. The address must be associated with the specified wallet.")
+    parser_send_from.add_argument('-private-key', help="Specifies the private key associated with a Denaro address. Not required if specifying an address from a wallet file.", dest='private_key')
     
     # Subparser to specify the receiving address and optional transaction message.
     parser_send_to_subparser = parser_send_from.add_subparsers(dest='transaction_send_to_subparser', required=True)
-    parser_send_to = parser_send_to_subparser.add_parser('to', parents=[verbose_parser, denaro_node])
+    parser_send_to = parser_send_to_subparser.add_parser('to',help="Specifies the receiver's details.", parents=[verbose_parser, denaro_node])
     parser_send_to.add_argument('receiver', help="The receiveing address.")
-    parser_send_to.add_argument('-message', default="", help="Optional transaction message.")
+    parser_send_to.add_argument('-message', help="Optional transaction message.", default="")
     
     # Subparser for checking balance
-    parser_balance = subparsers.add_parser('balance', parents=[verbose_parser, denaro_node])
-    parser_balance.add_argument('-wallet', required=True, help="Specifies the wallet filename. A filepath can be specified before the filename, if not then the default './wallets/' filepath will be used.")
-    parser_balance.add_argument('-password', help="The password used for encryption of the specified wallet.")
-    parser_balance.add_argument('-2fa-code', dest='tfacode', type=str, required=False, help="Two-Factor Authentication code for 2FA enabled wallets.")
-    parser_balance.add_argument('-address', help="Specifies the address to get the balance of.")
-    parser_balance.add_argument('-json', action='store_true', help="Prints the output of the blance information in JSON format.")
-    parser_balance.add_argument('-to-file', dest='to_file', action='store_true', help="Saves the output of the balance information to a file. The resulting file will be in JSON format and named as '[WalletName]_balance_[Timestamp].json' and stored in '/[WalletDirectory]/balance_information/[WalletName]/'. Example for './wallets/PersonalWallet.json': './wallets/balance_information/PersonalWallet/PersonalWallet_balance_2023-12-20_17-09-26.json'.")
-    parser_balance.add_argument('-show', choices=['generated', 'imported'], help="Filters balance information based on entry origin. Use 'generated' to retrieve only the balance information of wallet entries that have been internally generated. Use 'imported' to retrieve only the balance information of wallet entries that have been imported.")    
+    parser_balance = subparsers.add_parser('balance',help="Used to check the balance of addresses in the Denaro blockchain that are asociated with a specified wallet file.", parents=[verbose_parser, denaro_node])
+    parser_balance.add_argument('-wallet', help="Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.", required=True)
+    parser_balance.add_argument('-password', help="The password of the specified wallet. Required for wallets that are encrypted.")
+    parser_balance.add_argument('-2fa-code', help="Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.", dest='tfacode', required=False, type=str)
+    parser_balance.add_argument('-address', help="Specifies one or more addresses to get the balance of. Adding a hyphen `-` to the beginning of an address will exclude it. Format is: `address=ADDRESS_1, ADDRESS_2, ADDRESS_3,...`")
+    parser_balance.add_argument('-convert-to', help="Converts the monetary value of balances to a user specified currency, factoring in current exchange rates against the USD value of DNR. Supports 161 international currencies and major cryptocurrencies. A valid currency code is required (e.g., 'USD', 'EUR', 'GBP', 'BTC'). By default balance values are calculated in USD.", dest='currency_code', type=str)
+    parser_balance.add_argument('-show', help="Filters balance information based on entry origin. 'generated' is used to retrieve only the balance information of internally generated wallet entries. 'imported' is used to retrieve only the balance information of imported wallet entries.", choices=['generated', 'imported'])
+    parser_balance.add_argument('-json', help="Prints the balance information in JSON format.", action='store_true')
+    parser_balance.add_argument('-to-file', help="Saves the output of the balance information to a file. The resulting file will be in JSON format and named as '[WalletName]_balance_[Timestamp].json' and will be stored in '/[WalletDirectory]/balance_information/[WalletName]/'.", dest='to_file', action='store_true')
+       
     args = parser.parse_args()
 
-
-    if args.command == "generatewallet":
-        check_args(parser, args)        
-        address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa, deterministic=args.deterministic, backup=args.backup, disable_warning=args.disable_overwrite_warning, overwrite_password=args.overwrite_password)    
+    if args.command == "wallet":
+        address=None
+        if args.phrase:
+            if is_valid_mnemonic(args.phrase):
+                args.deterministic = True
+                check_args(parser, args)
+                address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa, deterministic=args.deterministic, backup=args.backup, disable_warning=args.disable_overwrite_warning, overwrite_password=args.overwrite_password,mnemonic=args.phrase)
+        else:
+            check_args(parser, args)
+            address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=None, new_wallet=True, encrypt=args.encrypt, use2FA=args.tfa, deterministic=args.deterministic, backup=args.backup, disable_warning=args.disable_overwrite_warning, overwrite_password=args.overwrite_password)    
         if address:
             print(address)
 
-    elif args.command == "generateaddress":
+    elif args.command == "address":
         address = generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False, amount=args.amount if args.amount else 1)    
         if address:
             print(address)
+    
+    elif args.command == 'paperwallet':
+        check_args(parser, args)
+        generatePaperWallet(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, address=args.address if args.address else None, private_key=args.private_key if args.private_key else None, file_type=args.type)
 
     elif args.command == 'decryptwallet':
-        address, field, args.filter_subparser_pretty, args.filter_subparser_show = process_decryptwallet_filter(args)
-        decrypted_data = decryptWalletEntries(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", address=address if address else None, fields=field if field else [], pretty=args.pretty or args.filter_subparser_pretty if args.pretty or args.filter_subparser_pretty else False, show=args.filter_subparser_show if args.filter_subparser_show else None)
+        address, field, args.filter_subparser_show = process_decryptwallet_filter(args)
+        decrypted_data = decryptWalletEntries(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", address=address if address else None, fields=field if field else [], to_json=args.json if args.json else False, show=args.filter_subparser_show if args.filter_subparser_show else None)
         if decrypted_data:
-            print(f'Wallet Data:\n"{decrypted_data}"')
+            print(decrypted_data)
+    
+    elif args.command == 'import':
+        generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False, private_key=args.private_key, is_import=True)
+    
+    elif args.command == 'backupwallet':
+        args.path = args.path if args.path else None
+        ensure_wallet_directories_exist(custom=args.path)        
+        filename = get_normalized_filepath(args.wallet)
+        _, wallet_exists = _load_data(filename, False)
+        if wallet_exists:
+            DataManipulation.backup_wallet(filename, args.path)
 
     elif args.command == 'send':
         check_args(parser, args)
-        transaction = prepareTransaction(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", amount=args.amount, sender=args.sender if args.sender else None, private_key=args.private_key if args.private_key else None, receiver=args.receiver, message=args.message, node=args.node)
+        transaction = prepareTransaction(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", amount=args.amount, sender=args.address if args.address else None, private_key=args.private_key if args.private_key else None, receiver=args.receiver, message=args.message, node=args.node)
         if transaction:
             print(f'Transaction successfully pushed to node. \nTransaction hash: {sha256(transaction.hex())}')
             print(f'\nDenaro Explorer link: http://explorer.denaro.is/transaction/{sha256(transaction.hex())}')
     
     elif args.command == 'balance':
-        address, _, _, _ = process_decryptwallet_filter(args)
-        checkBalance(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", address=address if args.address else None, node=args.node, to_json=args.json, to_file=args.to_file, show=args.show)
+        # Check if the currency code is valid and get the corresponding symbol
+        is_valid, currency_symbol = is_valid_currency_code(args.currency_code.upper()) if args.currency_code else (False, "$")        
+        # Set the currency code to upper case if valid, else default to "USD"
+        currency_code = args.currency_code.upper() if is_valid else "USD"        
+        # Process other arguments
+        address, _, _, = process_decryptwallet_filter(args)        
+        # Call checkBalance with the updated currency_code and currency_symbol
+        checkBalance(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else "", address=address if args.address else None, node=args.node, to_json=args.json, to_file=args.to_file, show=args.show, currency_code=currency_code, currency_symbol=currency_symbol)
     
-    elif args.command == 'import':
-        generateAddressHelper(filename=args.wallet, password=args.password, totp_code=args.tfacode if args.tfacode else None, new_wallet=False, encrypt=False, use2FA=False, private_key=args.private_key, is_import=True)
-
     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
 
 if __name__ == "__main__":
@@ -2047,4 +2604,4 @@ if __name__ == "__main__":
     finally:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         gc.collect()
-        sys.exit(exit_code)
+        #sys.exit(exit_code)

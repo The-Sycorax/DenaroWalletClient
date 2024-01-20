@@ -343,6 +343,31 @@ def private_to_public_key_fastecdsa(private_key_hex):
     data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
 
+def is_valid_mnemonic(mnemonic_phrase):
+    """
+    Validates the given mnemonic phrase.
+    
+    Args:
+    mnemonic_phrase (str): A 12-word mnemonic phrase.
+
+    Returns:
+    bool: True if the mnemonic is valid, False otherwise.
+    """
+    mnemo = mnemonic.Mnemonic("english")
+    words = mnemonic_phrase.split()
+
+    # Check if all words are in the wordlist
+    result = mnemo.check(mnemonic_phrase)
+
+    # Check if the number of words is 12
+    if len(words) != 12 or not result:
+        logging.error("The mnemonic phrase is invalid.")
+        data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        return False
+        
+    data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+    return result
+
 def generate(mnemonic_phrase=None, passphrase=None, index=0, deterministic=False, fields=None):
     """
     Generate cryptographic keys and addresses.
