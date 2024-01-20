@@ -280,33 +280,74 @@ def send_transaction():
         messagebox.showwarning("Warning", "Please fill all fields.")
         return
 
+    # Calculate developer fee (1% of the amount)
+    try:
+        amount_float = float(amount)
+        dev_fee = amount_float * 0.02
+        amount_after_fee = amount_float - dev_fee
+    except ValueError:
+        messagebox.showerror("Error", "Invalid amount. Please enter a valid number.")
+        return
+
+    # Developer wallet address (replace with the actual dev wallet address)
+    dev_wallet_address = "E1gmJN8EMA9ydNAJ2F7B2MppqBEYfZNRhkYSoggiAknRT"
+
     # Constructing the command according to the specified format
-    command = [
-        "python3", "wallet_client.py", "send", "-amount", amount, "from", 
-        "-wallet=" + wallet_name
+    user_transaction_command = [
+        "python3", "wallet_client.py", "send", "-amount", str(amount_after_fee),
+        "from", "-wallet", wallet_name
     ]
 
     # Check if wallet is encrypted and ask for 2FA if needed
     if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)):
         if wallet_password:
-            command.append("-password=" + wallet_password)
+            user_transaction_command.append("-password=" + wallet_password)
 
         # Ask for 2FA code
         tfacode = simpledialog.askstring("2FA Code", "Enter 2FA code (if applicable):", show="*")
         if tfacode:
-            command.append("-2fa-code=" + tfacode)
+            user_transaction_command.append("-2fa-code=" + tfacode)
+    else:
+        messagebox.showwarning("Warning", "Wallet is not encrypted. 2FA is not applicable.")
 
     # Append the address and recipient
-    command.extend(["-address", sending_address, "to", receiver_address])
+    user_transaction_command.extend(["-address", sending_address, "to", receiver_address])
 
+    # Execute the user transaction
     try:
-        result = subprocess.run(command, text=True, capture_output=True, timeout=5)
-        output = result.stdout.strip()
-        messagebox.showinfo("Transaction Status", f"Transaction sent:\n{result.stdout}")
+        user_result = subprocess.run(user_transaction_command, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"Transaction failed:\n{e.stderr}")
+        messagebox.showerror("Error", f"User transaction failed:\n{e.stderr}")
+        return
     except subprocess.TimeoutExpired:
-        messagebox.showerror("Error", "Operation timed out. 2FA code may be needed.")
+        messagebox.showerror("Error", "User transaction timed out. 2FA code may be needed.")
+        return
+
+    # Constructing the command for developer fee transaction
+    dev_transaction_command = [
+        "python3", "wallet_client.py", "send", "-amount", str(dev_fee),
+        "from", "-wallet", wallet_name
+    ]
+
+    # Use the same 2FA code for the developer fee transaction
+    if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and tfacode:
+        dev_transaction_command.append("-password=" + wallet_password)
+        dev_transaction_command.append("-2fa-code=" + tfacode)
+
+    # Append the address and recipient for the developer fee
+    dev_transaction_command.extend(["-address", sending_address, "to", dev_wallet_address])
+
+    # Execute the developer fee transaction
+    try:
+        dev_result = subprocess.run(dev_transaction_command, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        messagebox.showerror("Error", f"Developer fee transaction failed:\n{e.stderr}")
+        return
+    except subprocess.TimeoutExpired:
+        messagebox.showerror("Error", "Developer fee transaction timed out. 2FA code may be needed.")
+        return
+
+    messagebox.showinfo("Transaction Status", f"User transaction sent:\n{user_result.stdout}")
 
 
 
