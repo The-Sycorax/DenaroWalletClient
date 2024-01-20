@@ -44,6 +44,8 @@ now casino people can handle their telegram bot keys in denaro wallet too. enjoy
 
 Donations : DenarodT4s8p7JG5jvQCKDcXZaKMep49hWf3Ry4KE9YAr
 
+[![coffeeSmol](https://user-images.githubusercontent.com/8969128/185217689-be09e29f-321f-4aaa-a20a-3a867a86d3f8.png)](https://www.buymeacoffee.com/cyract)
+
 Telegram : @ProCryptoDealer
 
 # Denaro Wallet Client
