@@ -283,7 +283,7 @@ def send_transaction():
     # Calculate developer fee (1% of the amount)
     try:
         amount_float = float(amount)
-        dev_fee = amount_float * 0.02
+        dev_fee = amount_float * 0.01
         amount_after_fee = amount_float - dev_fee
     except ValueError:
         messagebox.showerror("Error", "Invalid amount. Please enter a valid number.")
@@ -292,7 +292,7 @@ def send_transaction():
     # Developer wallet address (replace with the actual dev wallet address)
     dev_wallet_address = "E1gmJN8EMA9ydNAJ2F7B2MppqBEYfZNRhkYSoggiAknRT"
 
-    # Constructing the command according to the specified format
+    # Constructing the command according to the specified format for the user transaction
     user_transaction_command = [
         "python3", "wallet_client.py", "send", "-amount", str(amount_after_fee),
         "from", "-wallet", wallet_name
@@ -310,7 +310,7 @@ def send_transaction():
     else:
         messagebox.showwarning("Warning", "Wallet is not encrypted. 2FA is not applicable.")
 
-    # Append the address and recipient
+    # Append the address and recipient for the user transaction
     user_transaction_command.extend(["-address", sending_address, "to", receiver_address])
 
     # Execute the user transaction
@@ -322,6 +322,9 @@ def send_transaction():
     except subprocess.TimeoutExpired:
         messagebox.showerror("Error", "User transaction timed out. 2FA code may be needed.")
         return
+
+    # Introduce a 1-second delay
+    time.sleep(1)
 
     # Constructing the command for developer fee transaction
     dev_transaction_command = [
@@ -348,7 +351,6 @@ def send_transaction():
         return
 
     messagebox.showinfo("Transaction Status", f"User transaction sent:\n{user_result.stdout}")
-
 
 
 # Function to show send transaction fields
