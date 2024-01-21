@@ -309,7 +309,7 @@ def send_transaction():
         if tfacode:
             user_transaction_command.append("-2fa-code=" + tfacode)
     else:
-        messagebox.showwarning("Warning", "Wallet is not encrypted. 2FA is not applicable.")
+        messagebox.showwarning("Warning", "Wallet is not encrypted. 2FA is not applicable press OK.")
 
     # Append the address and recipient for the user transaction
     user_transaction_command.extend(["-address", sending_address, "to", receiver_address])
