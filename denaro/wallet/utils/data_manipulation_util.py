@@ -6,6 +6,8 @@ import random
 import time
 import ctypes
 import json
+import shutil
+import datetime
 from filelock import FileLock
 import cryptographic_util
 import verification_util
@@ -171,6 +173,24 @@ class DataManipulation:
             logging.error(f"Error saving data to file: {str(e)}")
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
     
+    @staticmethod
+    def backup_wallet(filename, directory):
+        # Construct the backup filename
+        base_filename = os.path.basename(filename)
+        backup_name, _ = os.path.splitext(base_filename)
+        #backup_path = os.path.join("./wallets/wallet_backups", f"{backup_name}_backup_{datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d_%H-%M-%S')}") + ".json"
+        backup_path = os.path.join("./wallets/wallet_backups" if not directory else directory, f"{backup_name}_backup_{datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d_%H-%M-%S')}") + ".json"
+        try:
+            # Create the backup
+            shutil.copy(filename, backup_path)
+            print(f"Backup created at: {backup_path}")
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return True
+        except Exception as e:
+            logging.error(f" Could not create backup: {e}\n")
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return
+
     @staticmethod
     def overwrite_with_pattern(file, pattern, file_size):
         """Overview:

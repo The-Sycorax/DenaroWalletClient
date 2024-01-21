@@ -354,6 +354,7 @@ class EncryptDecryptUtils:
                 A tuple comprising the descrambled data and the determined number of failed password attempts.
         """        
         # Loop between 1-10 to get amount of failed password attempts
+        number_of_attempts = 0
         for n in range(10):
             # Descrample Data
             descrambled_data = data_manipulation_util.DataManipulation.descramble(data,n.to_bytes(4, byteorder='big'))            

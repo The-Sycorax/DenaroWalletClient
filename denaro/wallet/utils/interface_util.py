@@ -484,7 +484,7 @@ class UserPrompts:
             try:
                 # Create the backup
                 shutil.copy(filename, backup_path)
-                print(f"Backup created at {backup_path}")
+                print(f"Backup created at {backup_path}\n")
                 data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return True
 
@@ -569,7 +569,7 @@ class UserPrompts:
                         try:
                             # Overwrite wallet with empty data
                             data_manipulation_util.DataManipulation.delete_wallet(filename, data)
-                            print("Wallet data has been erased.")
+                            print("Wallet data has been erased.\n")
                             time.sleep(0.5)
                         except Exception as e:
                             data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
