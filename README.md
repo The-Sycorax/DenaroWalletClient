@@ -1,4 +1,4 @@
-# Denaro wallet V0.0.5, DenaroWalletClient GUI #
+# Denaro wallet V0.0.5-Beta, DenaroWalletClient GUI #
 
 make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic soon to be added)
 
