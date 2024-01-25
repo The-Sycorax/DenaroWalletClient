@@ -4,11 +4,12 @@ make sure to import manually the file including wallets files .or generate a new
 
 
 RUN : UI.py
-![Screenshot from 2024-01-13 13-42-28](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/68cdec47-9434-4287-97a4-e070b17f1852)
 
+![Screenshot from 2024-01-25 17-29-14](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/391b5bff-eac3-4138-9fb6-54341a55b851)
 
+![Screenshot from 2024-01-25 17-29-49](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/a2752199-8120-4a99-bb95-0b4f48ba4abb)
 
-![Screenshot from 2024-01-13 19-11-01](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/ae0f3c11-9f8b-4da9-af90-310e3429088f)
+![Screenshot from 2024-01-25 17-32-30](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/13a32635-f299-4581-9a13-9c1f840332fa)
 
 
 # On Wallet Operations tab
