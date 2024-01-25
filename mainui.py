@@ -257,7 +257,7 @@ def refresh_balance_thread():
 def update_address_balance(address, balance):
     for child in address_list.get_children():
         if address_list.item(child)["values"][0] == address:
-            address_list.item(child, values=(address, f"Balance: {balance}"))
+            address_list.item(child, values=(address, f"Balance: {balance} DNR"))
 
 
 
@@ -281,78 +281,33 @@ def send_transaction():
         messagebox.showwarning("Warning", "Please fill all fields.")
         return
 
-    # Calculate developer fee (1% of the amount)
-    try:
-        amount_float = float(amount)
-        dev_fee = amount_float * 0.01
-        amount_after_fee = amount_float - dev_fee
-    except ValueError:
-        messagebox.showerror("Error", "Invalid amount. Please enter a valid number.")
-        return
-
-    # Developer wallet address (replace with the actual dev wallet address)
-    dev_wallet_address = "E1gmJN8EMA9ydNAJ2F7B2MppqBEYfZNRhkYSoggiAknRT"
-
-    # Constructing the command according to the specified format for the user transaction
-    user_transaction_command = [
-        "python3", "wallet_client.py", "send", "-amount", str(amount_after_fee),
-        "from", "-wallet", wallet_name
+    # Constructing the command according to the specified format
+    command = [
+        "python3", "wallet_client.py", "send", "-amount", amount, "from", 
+        "-wallet=" + wallet_name
     ]
 
     # Check if wallet is encrypted and ask for 2FA if needed
     if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)):
         if wallet_password:
-            user_transaction_command.append("-password=" + wallet_password)
+            command.append("-password=" + wallet_password)
 
         # Ask for 2FA code
         tfacode = simpledialog.askstring("2FA Code", "Enter 2FA code (if applicable):", show="*")
         if tfacode:
-            user_transaction_command.append("-2fa-code=" + tfacode)
-    else:
-        messagebox.showwarning("Warning", "Wallet is not encrypted. 2FA is not applicable press OK.")
+            command.append("-2fa-code=" + tfacode)
 
-    # Append the address and recipient for the user transaction
-    user_transaction_command.extend(["-address", sending_address, "to", receiver_address])
+    # Append the address and recipient
+    command.extend(["-address", sending_address, "to", receiver_address])
 
-    # Execute the user transaction
     try:
-        user_result = subprocess.run(user_transaction_command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, text=True, capture_output=True, timeout=5)
+        output = result.stdout.strip()
+        messagebox.showinfo("Transaction Status", f"Transaction sent:\n{result.stdout}")
     except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"User transaction failed:\n{e.stderr}")
-        return
+        messagebox.showerror("Error", f"Transaction failed:\n{e.stderr}")
     except subprocess.TimeoutExpired:
-        messagebox.showerror("Error", "User transaction timed out. 2FA code may be needed.")
-        return
-
-    # Introduce a 1-second delay
-    time.sleep(1)
-
-    # Constructing the command for developer fee transaction
-    dev_transaction_command = [
-        "python3", "wallet_client.py", "send", "-amount", str(dev_fee),
-        "from", "-wallet", wallet_name
-    ]
-
-    # Use the same 2FA code for the developer fee transaction
-    if is_wallet_encrypted(os.path.join("./wallets", selected_wallet_file)) and tfacode:
-        dev_transaction_command.append("-password=" + wallet_password)
-        dev_transaction_command.append("-2fa-code=" + tfacode)
-
-    # Append the address and recipient for the developer fee
-    dev_transaction_command.extend(["-address", sending_address, "to", dev_wallet_address])
-
-    # Execute the developer fee transaction
-    try:
-        dev_result = subprocess.run(dev_transaction_command, capture_output=True, text=True, check=True)
-    except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"transaction failed:\n{e.stderr}")
-        return
-    except subprocess.TimeoutExpired:
-        messagebox.showerror("Error", "transaction timed out. 2FA code may be needed.")
-        return
-
-    messagebox.showinfo("Transaction Status", f"User transaction sent:\n{user_result.stdout}")
-
+        messagebox.showerror("Error", "Operation timed out. 2FA code may be needed.")
 
 # Function to show send transaction fields
 
@@ -658,7 +613,7 @@ logo_image = logo_image.subsample(8, 8)  # Adjust as needed
 logo_label = tk.Label(top_frame, image=logo_image, bg='white')
 logo_label.grid(row=0, column=0, padx=5, pady=5)
 
-text_label = tk.Label(top_frame, text="v1.0.1", bg='white', fg='blue', font=('Helvetica', 22, 'bold'))
+text_label = tk.Label(top_frame, text="v0.0.5-beta", bg='white', fg='blue', font=('Helvetica', 22, 'bold'))
 text_label.grid(row=0, column=1, padx=6, pady=6)
 
 
@@ -667,11 +622,11 @@ top_frame.columnconfigure(2, weight=1)
 # Configure styles
 # Configure styles for light mode
 DARK_BG = "#FFFFFF"
-LIGHT_BG = "#FFFFFF"  # White background
+LIGHT_BG = "#0d71ab"  # White background
 DARK_TEXT = "#000000"  # Black text
 ACCENT_COLOR = "#0077CC"  # Blue for accent
-ENTRY_BG = "#F0F0F0"  # Light grey for entry fields
-BUTTON_BG = "#E0E0E0"  # Light grey for buttons
+ENTRY_BG = "#0d71ab"  # Light grey for entry fields
+BUTTON_BG = "#d1f7f9"  # Light grey for buttons
 LIGHT_TEXT = "#0077CC"
 PAD_X = 10
 PAD_Y = 5
@@ -689,6 +644,7 @@ def clear_treeview_selection(event):
 top_frame.bind("<Button-1>", clear_treeview_selection)
 
 style = ttk.Style(root)
+style.configure('Custom.TButton', font=('Arial', 12, 'bold'))
 style.theme_use('clam')
 style.configure("Treeview",
                 background=BUTTON_BG,  # Background color of the Treeview
@@ -712,7 +668,7 @@ style.map('Treeview', background=[('selected', ACCENT_COLOR)])  # Background col
 style.configure("Treeview.Heading", background="white", foreground="blue", font=('Helvetica', 10, 'bold'))
 root.configure(bg=BUTTON_BG)
 
-
+font_style = ('Roman', 14) 
 
 # Create the tab control
 tab_control = ttk.Notebook(root)
@@ -720,11 +676,14 @@ tab1 = ttk.Frame(tab_control, style='TFrame')
 tab2 = ttk.Frame(tab_control, style='TFrame')
 tab3 = ttk.Frame(tab_control, style='TFrame')
 tab4 = ttk.Frame(tab_control, style='TFrame')
+tab5 = ttk.Frame(tab_control, style='TFrame')
 tab_control.add(tab1, text='Wallet Operations')
 tab_control.add(tab2, text='Generate Options')
 tab_control.add(tab3, text='Wallet Settings')
+tab_control.add(tab5, text='Transactions/History')
 tab_control.add(tab4, text='FAQ')
-
+transactions_label = tk.Label(tab5, text='Coming Soon!', font=('Arial', 30))
+transactions_label.place(relx=0.5, rely=0.5, anchor='center')
 tab_control.pack(expand=1, fill="both")
 
 
@@ -747,10 +706,11 @@ address_frame.pack(padx=PAD_X, pady=PAD_Y, in_=tab1)
 address_labels = {}
 
 # Button to display addresses
-columns = ('Address', 'Balance')
+columns = ('Address', 'Balance','Price')
 address_list = ttk.Treeview(tab1, columns=columns, show='headings', style="Treeview")
 address_list.heading('Address', text='Address')
 address_list.heading('Balance', text='Balance')
+address_list.heading('Price', text='Price Value(coming soon)')
 address_list.pack(side="left", fill="both", expand=True)
 address_list.bind('<<TreeviewSelect>>', on_treeview_select)
 
@@ -765,7 +725,7 @@ refresh_button = ttk.Button(root, text="Refresh Balance", command=refresh_balanc
 
 # Label for total balance
 total_balance = tk.StringVar()
-total_balance_label = ttk.Label(root, textvariable=total_balance, justify=tk.RIGHT)
+total_balance_label = ttk.Label(root, textvariable=total_balance, justify=tk.RIGHT,font=font_style)
 total_balance_label.pack(side="bottom", anchor="e", padx=PAD_X, pady=PAD_Y, in_=tab1)
 
 
@@ -776,29 +736,36 @@ total_balance_label.pack(side="bottom", anchor="e", padx=PAD_X, pady=PAD_Y, in_=
 # Generate Wallet Frame widgets
 # Generate Wallet Frame widgets
 generate_wallet_frame = tk.Frame(root, bg=DARK_BG)
-wallet_name_label = ttk.Label(generate_wallet_frame, text="Wallet Name:")
-wallet_name_entry = ttk.Entry(generate_wallet_frame)
-generate_wallet_password_label = ttk.Label(generate_wallet_frame, text="Password (optional):")
-generate_wallet_password_entry = ttk.Entry(generate_wallet_frame, show="*")
 
-# Regular wallet generation button
-confirm_generate_button = ttk.Button(generate_wallet_frame, text="Confirm", command=generate_wallet)
+# Create labels and entry widgets with modified font
+font_style = ('Gigi', 14)  # Example font family and size
 
-# 2FA wallet generation button
-generate_2fa_wallet_button = ttk.Button(generate_wallet_frame, text="Generate 2FA Wallet", command=generate_2fa_wallet)
+wallet_name_label = ttk.Label(generate_wallet_frame, text="Wallet Name:", background=DARK_BG, foreground=LIGHT_BG, font=font_style)
+wallet_name_entry = ttk.Entry(generate_wallet_frame, font=font_style)
 
-# Packing widgets within generate_wallet_frame
-wallet_name_label.pack(side="top", fill='x')
-wallet_name_entry.pack(side="top", fill='x')
-generate_wallet_password_label.pack(side="top", fill='x')
-generate_wallet_password_entry.pack(side="top", fill='x')
+generate_wallet_password_label = ttk.Label(generate_wallet_frame, text="Password (optional):", background=DARK_BG, foreground=LIGHT_BG, font=font_style)
+generate_wallet_password_entry = ttk.Entry(generate_wallet_frame, show="*", font=font_style)
 
-# Create a frame for buttons to align them horizontally
+# Create buttons with the custom style
+confirm_generate_button = ttk.Button(generate_wallet_frame, text="Generate Wallet", command=generate_wallet, style='Custom.TButton')
+generate_2fa_wallet_button = ttk.Button(generate_wallet_frame, text="Generate 2FA Wallet", command=generate_2fa_wallet, style='Custom.TButton')
+
+# Configure padding for labels and entries
+padding = {'padx': 12, 'pady': 6}
+
+# Pack labels, entries, and buttons with modified font
+wallet_name_label.pack(side="top", fill='x', **padding)
+wallet_name_entry.pack(side="top", fill='x', **padding)
+generate_wallet_password_label.pack(side="top", fill='x', **padding)
+generate_wallet_password_entry.pack(side="top", fill='x', **padding)
+
 buttons_frame = tk.Frame(generate_wallet_frame, bg=DARK_BG)
 buttons_frame.pack(side="top", fill='x', pady=(5, 0))
 
 confirm_generate_button.pack(side="left", padx=(0, 5))
 generate_2fa_wallet_button.pack(side="left")
+
+
 
 
 
@@ -809,33 +776,42 @@ generate_2fa_wallet_button.pack(side="left")
 
 # Generate Addresses Frame widgets
 generate_addresses_frame = tk.Frame(root, bg=DARK_BG)
-generate_amount_label = ttk.Label(generate_addresses_frame, text="Amount for Addresses:")
+
+
+# Create labels and entry widgets for Generate Addresses frame
+generate_amount_label = ttk.Label(generate_addresses_frame, text="Amount for Addresses:", background=DARK_BG, foreground=LIGHT_BG,font=font_style)
 generate_amount_entry = ttk.Entry(generate_addresses_frame)
-password_label = ttk.Label(generate_addresses_frame, text="Password (optional):")
+
+password_label = ttk.Label(generate_addresses_frame, text="Password (optional):", background=DARK_BG, foreground=LIGHT_BG,font=font_style)
 password_entry = ttk.Entry(generate_addresses_frame, show="*")
-tfacode_label = ttk.Label(generate_addresses_frame, text="2FA Code (optional):")
+
+tfacode_label = ttk.Label(generate_addresses_frame, text="2FA Code (optional):", background=DARK_BG, foreground=LIGHT_BG,font=font_style)
 tfacode_entry = ttk.Entry(generate_addresses_frame)
+
 confirm_generate_addresses_button = ttk.Button(generate_addresses_frame, text="Confirm", command=generate_addresses)
 generation_output_label = ttk.Label(generate_addresses_frame)
 
-# Positioning the Generate Addresses Frame widgets
-generate_amount_label.pack(side="top")
-generate_amount_entry.pack(side="top")
-password_label.pack(side="top")
-password_entry.pack(side="top")
-tfacode_label.pack(side="top")
-tfacode_entry.pack(side="top")
-confirm_generate_addresses_button.pack(side="top")
-generation_output_label.pack(side="top")
+# Configure padding for labels and entries
+padding = {'padx': 14, 'pady': 7}
+
+# Pack labels and entries for Generate Addresses frame
+generate_amount_label.pack(side="top", fill='x', **padding)
+generate_amount_entry.pack(side="top", fill='x', **padding)
+password_label.pack(side="top", fill='x', **padding)
+password_entry.pack(side="top", fill='x', **padding)
+tfacode_label.pack(side="top", fill='x', **padding)
+tfacode_entry.pack(side="top", fill='x', **padding)
+confirm_generate_addresses_button.pack(side="top", **padding)
+generation_output_label.pack(side="top", **padding)
 
 
 send_transaction_frame = tk.Frame(tab1, bg=DARK_BG)  # Place it inside tab1
 
-sending_address_label = ttk.Label(send_transaction_frame, text="From Address:")
-sending_address_dropdown = ttk.Combobox(send_transaction_frame, state="readonly")
-recipient_address_label = ttk.Label(send_transaction_frame, text="To Address:")
+sending_address_label = ttk.Label(send_transaction_frame, text="From Address:",font=font_style)
+sending_address_dropdown = ttk.Combobox(send_transaction_frame, state="readonly",font=font_style)
+recipient_address_label = ttk.Label(send_transaction_frame, text="To Address:,",font=font_style)
 recipient_address_entry = ttk.Entry(send_transaction_frame)
-amount_label = ttk.Label(send_transaction_frame, text="Amount:")
+amount_label = ttk.Label(send_transaction_frame, text="Amount:",font=font_style)
 amount_entry = ttk.Entry(send_transaction_frame)
 confirm_send_button = ttk.Button(send_transaction_frame, text="Confirm", command=send_transaction)
 
@@ -847,12 +823,12 @@ def toggle_generate_addresses_frame():
         generate_addresses_frame.pack(padx=PAD_X, pady=PAD_Y, in_=tab2)
 
         # Pack each component inside the frame
-        generate_amount_label.pack(side="top")
-        generate_amount_entry.pack(side="top")
-        password_label.pack(side="top")
-        password_entry.pack(side="top")
-        tfacode_label.pack(side="top")
-        tfacode_entry.pack(side="top")
+        generate_amount_label.pack(side="top", **padding)
+        generate_amount_entry.pack(side="top", **padding)
+        password_label.pack(side="top", **padding)
+        password_entry.pack(side="top", **padding)
+        tfacode_label.pack(side="top", **padding)
+        tfacode_entry.pack(side="top", **padding)
         confirm_generate_addresses_button.pack(side="top")
         generation_output_label.pack(side="top")
 
@@ -898,12 +874,12 @@ def open_send_transaction():
 
 
 backup_wallet_frame = tk.Frame(tab3, bg=DARK_BG)
-backup_wallet_label = ttk.Label(backup_wallet_frame, text="Never share your keys")
+backup_wallet_label = ttk.Label(backup_wallet_frame, text="Never share your keys !!",font=font_style)
 backup_wallet_dropdown = ttk.Combobox(backup_wallet_frame, state="readonly", values=[f for f in os.listdir("./wallets") if f.endswith('.json')])
 backup_wallet_button = ttk.Button(backup_wallet_frame, text="Reveal", command=backup_wallet)
 
 # Create a Text widget with a Scrollbar for displaying backup information
-backup_info_text = tk.Text(backup_wallet_frame, height=10, width=50)
+backup_info_text = tk.Text(backup_wallet_frame, height=16, width=80)
 backup_info_scroll = ttk.Scrollbar(backup_wallet_frame, command=backup_info_text.yview)
 backup_info_text.configure(yscrollcommand=backup_info_scroll.set)
 
