@@ -1,11 +1,13 @@
-# Denaro wallet V0.0.5-Beta, DenaroWalletClient GUI #
+# Denaro wallet V0.0.6-Beta, DenaroWalletClient GUI #
 
 make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic soon to be added)
 
 
 RUN : UI.py
 
-![Screenshot from 2024-01-25 17-29-14](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/391b5bff-eac3-4138-9fb6-54341a55b851)
+![Screenshot from 2024-02-02 02-46-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/15e6a155-cd67-4564-8b1f-f4dadbff668d)
+
+![Screenshot from 2024-02-02 00-34-17](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/957a3a41-376d-4038-8370-4b1ee23bc20e)
 
 ![Screenshot from 2024-01-25 17-29-49](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/a2752199-8120-4a99-bb95-0b4f48ba4abb)
 
