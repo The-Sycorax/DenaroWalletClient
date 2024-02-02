@@ -59,7 +59,6 @@ Telegram Wallet Donation QR code :
   ![image](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/fcadb1c5-5b99-4387-8336-7ad508f9cf99)
 
 
-[![coffeeSmol](https://user-images.githubusercontent.com/8969128/185217689-be09e29f-321f-4aaa-a20a-3a867a86d3f8.png)](https://www.buymeacoffee.com/cyract)
 
 Telegram : @ProCryptoDealer
 
