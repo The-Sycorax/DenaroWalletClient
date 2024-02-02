@@ -1,6 +1,13 @@
 # Denaro wallet V0.0.6-Beta, DenaroWalletClient GUI #
 
-make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted (deterministic soon to be added)
+make sure to import manually the file including wallets files .or generate a new one in the second tab encrypted or non encrypted
+
+    New Features:
+        The ability to view the real-world value of Denaro balances.
+        Generating Denaro paper wallets.
+        Support for backing up wallet files.
+        Generating wallets based on a mnemonic phrase.
+        Improved wallet decryption.
 
 
 RUN : UI.py
