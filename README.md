@@ -5,8 +5,6 @@ make sure to import manually the file including wallets files .or generate a new
     New Features:
         The ability to view the real-world value of Denaro balances.
         Generating Denaro paper wallets.
-        Support for backing up wallet files.
-        Generating wallets based on a mnemonic phrase.
         Improved wallet decryption.
 
 
