@@ -5,14 +5,13 @@ make sure to import manually the file including wallets files .or generate a new
 
 RUN : UI.py
 
-![Screenshot from 2024-02-02 02-46-03](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/15e6a155-cd67-4564-8b1f-f4dadbff668d)
+![Screenshot from 2024-02-02 02-53-57](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/c69f5c81-ccde-496e-b22a-9d60270969e0)
 
-![Screenshot from 2024-02-02 00-34-17](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/957a3a41-376d-4038-8370-4b1ee23bc20e)
+![Screenshot from 2024-02-02 02-55-07](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/8bfe2c91-b1a8-4fe7-b55e-daf0d27d5870)
 
-![Screenshot from 2024-01-25 17-29-49](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/a2752199-8120-4a99-bb95-0b4f48ba4abb)
+![Screenshot from 2024-02-02 02-56-01](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/014d272c-8b4b-4d82-9929-3334497f27d8)
 
-![Screenshot from 2024-01-25 17-32-30](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/13a32635-f299-4581-9a13-9c1f840332fa)
-
+![Screenshot from 2024-02-02 02-56-42](https://github.com/Avecci-Claussen/DenaroWalletClient/assets/73264647/dcf38751-bf34-4258-9897-5b6efce832ae)
 
 # On Wallet Operations tab
 
