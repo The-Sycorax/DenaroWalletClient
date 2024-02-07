@@ -4,9 +4,9 @@ base58~=0.2.2
 pygame==2.5.2
 mnemonic==0.20
 bitcoinlib==0.6.12
-pycryptodome==3.19.0
+pycryptodome==3.19.1
 pyotp==2.9.0
 qrcode==7.4.2
-Pillow==10.1.0
+Pillow==10.2.0
 filelock==3.13.1
 reportlab==4.0.8
