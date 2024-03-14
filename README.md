@@ -38,6 +38,9 @@ source env/bin/activate
 
 # Install the required packages
 pip3 install -r requirements.txt
+
+# Run the wallet client
+python3 wallet_client.py <options>
 ```
 
 To exit the Python Virtual Environment use:
