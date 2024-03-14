@@ -142,7 +142,7 @@ deactivate
             
             *Note: The `-password` option must be set for encrypted and/or deterministic wallets.*
         
-            * `-wallet`: (Required) Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
+            * `-wallet`: Specifies the wallet filename. Defaults to the `./wallets/` directory if no specific filepath is provided.
             * `-password`: The password of the specified wallet. Required for wallets that are encrypted.  
             * `-2fa-code`: Optional Two-Factor Authentication code for encrypted wallets that have 2FA enabled. Should be the 6-digit code generated from an authenticator app.
             * `-address`: Specifies a Denaro address associated with the wallet file. A paper wallet will be generated for this Denaro address.
@@ -158,7 +158,7 @@ deactivate
         ---
 
         #### `decryptwallet`
-        **Overview**: The `decryptwallet` sub-command can either decrypt all entries in a wallet file, or selectivly decrypt specific entries based on a provided filter, and returns the decrypted data back to the console.        
+        **Overview**: The `decryptwallet` sub-command can either decrypt all entries in a wallet file, or selectivly decrypt specific entries based on a provided filter, and return the decrypted data back to the console.        
         
         *Note: An encrypted wallet is not required to use this sub-command. Therefore, it has been designed to also return data from wallets that are not encrypted.*
 
@@ -217,7 +217,7 @@ deactivate
         ---
         
         #### `send`
-        **Overview**: The `send` sub-command is used to initiate a transaction in the Denaro blockchain network. This sub-command allows users to send Denaro to a specified address. 
+        **Overview**: The `send` sub-command is used to initiate a transaction on the Denaro blockchain. This sub-command allows users to send Denaro to a specified address. 
         
         *Note: The source of funds for the transaction (the sender) can be specified in two ways: either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.*
 
@@ -254,9 +254,9 @@ deactivate
         ---
         
         #### `balance`
-        **Overview**: The `balance` sub-command is used to check the balance of addresses in the Denaro blockchain that are asociated with a specified wallet file. 
+        **Overview**: The `balance` sub-command is used to check the balance of addresses on the Denaro blockchain that are asociated with a specified wallet file. 
         
-        *Note: Similar to `decryptwallet filter`, the `balance` sub-command also has a way to filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Wallet entries can also be filtered based on origin (See `-show` option for more details).*
+        *Note: Similar to `decryptwallet filter`, the `balance` sub-command can also filter wallet entries. The `-address` option can be used to filter one or more addresses that are associated with a wallet. Addresses can be excluded by adding a hyphen (`-`) to the beginning of it. Wallet entries can also be filtered based on origin (See `-show` option for more details).*
         
         <details>
         <summary>Usage:</summary> 
@@ -323,7 +323,7 @@ deactivate
         
         - **Syntax**:
             ```bash
-            wallet_client.py backupwallet [-h] -wallet WALLET [-path TO]
+            wallet_client.py backupwallet [-h] -wallet WALLET [-path PATH]
             ```
         
         - **Options**:
@@ -347,7 +347,7 @@ deactivate
         <i>Note: The wallet filename does not require a .json extension to be added as this is entirely optional. By default, the script will add the extension to the filename if not present.</i>
         </dd><dd>
         
-        *If the wallet specified already exists the user will be prompted with a warning and asked if they want to backup the existing wallet. If the user chooses not to back up an existing wallet, then they will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet. When overwriting an encrypted wallet, the password associated with the it is required, and the user will be prompted to type it in. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to [generate wallet](#generatewallet) options for details).*
+        *If the specified wallet file already exists then the user will be prompted with a warning and asked if they want to backup the existing wallet. If the user chooses not to back up an existing wallet, then they will be prompted with an additional warning and asked to confirm the overwrite of the existing wallet. When overwriting an encrypted wallet, the password associated with the it is required, and the user will be prompted to type it in. The user can choose to bypass one or more of these prompts with the use of `-backup`, `-disable-overwrite-warning`, or `-overwrite-password` (Refer to [generate wallet](#generatewallet) options for details).*
         
         
         
@@ -379,7 +379,7 @@ deactivate
         
         * Generates an address for a wallet that is un-encrypted and/or non-deterministic:
             ```bash
-            python3 wallet_client.py generat eaddress -wallet=wallet.json
+            python3 wallet_client.py generate eaddress -wallet=wallet.json
             ```
         * Generates an address for a wallet that is encrypted and/or deterministic:
             ```bash
@@ -482,7 +482,7 @@ deactivate
             ```
         * Sends 100 Denaro to a recipient using the priate key associated with a Denaro address:
             
-            *Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it. The private key in this example was randomly generated and dose not have funds.*
+            *Private keys should be in hexdecimal format and are generally 64 characters in length. It is not reccomended to directly specify a private key, as this could lead to the irreversable loss of funds if anyone has access to it.*
 
             ```bash
             python3 wallet_client.py send -amount=100 from -private-key=43c718efb31e0fef4c94cbd182e3409f54da0a8eab8d9713f5b6b616cddbf4cf to DwpnwDyCTEXP4q7fLRzo4vwQvGoGuDKxikpCHB9BwSiMA
