@@ -15,7 +15,7 @@ Inherent to its architecture, the wallet client deeply inegrates and bakes these
 This encryption method is implemented in stages, beginning with the encryption of individual JSON key-value pairs of wallet data using the dual-layer technique. Afterwhich, the entire JSON entry that contains these encrypted key-value pairs is also encrypted, resulting in multiple layers of encryption. By implementing this multi-layered encryption approach along with the various security mechanisms, the wallet client not only secures wallet data but also substantially fortifies its underlying cryptographic keys against a variety of threats.
 
 ## Installation Guide
-*Note: The Denaro Wallet Client has not been tested Windows or MacOS and support is unknown at this time. It is reccomended to use the wallet client on Ubuntu/Debian Linux to avoid any compatibility or stability issues.*
+*Note: The Denaro Wallet Client has not been tested on Windows or MacOS and support is unknown at this time. It is reccomended to use the wallet client on Ubuntu/Debian Linux to avoid any compatibility or stability issues.*
 
 ```bash
 # Clone the repository
