@@ -1115,7 +1115,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     
     else:
         if len(generated_entries) > 0:
-            print("--------------------------------Internally Generated Entries--------------------------------")   
+            print("-"*32+"Internally Generated Entries"+"-"*32)   
             if "mnemonic" in fields and deterministic:
                 print(f"Master Mnemonic: {mnemonic}\n")
             for entry in generated_entries:
@@ -1128,7 +1128,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
                         print(f"{formatted_key}: {value}")
                 print()         
         if len(imported_entries) > 0:
-            print("--------------------------------------Imported Entries--------------------------------------")
+            print("-"*38+"Imported Entries"+"-"*38)
             for entry in imported_entries:
                 for key, value in entry.items():
                     if key == 'id':
@@ -1712,7 +1712,7 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
             if not to_json and not to_file:
                 # Print balance information
                 print(f"\nDNR/{currency_code} Price: {currency_symbol}{formatted_price_str} {'(Calculated from USD)' if not currency_code == 'USD' else ''}\nBalance Information For: {filename}")
-                print("-----------------------------------------------------------")
+                print("-"*59)
                 for entry_feild in entry_data:
                     if entry_feild == "imported_entries":
                         is_import = True
@@ -1731,7 +1731,7 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
                         total_pending += pending_balance
                         # Output the balance in DNR and its value in the chosen currency                  
                         print(f'{"Imported " if is_import else ""}Address #{id}: {address}\nBalance: {balance} DNR{f" (Pending: {pending_balance} DNR)" if pending_balance != 0 else ""}\n{currency_code} Value: {currency_symbol}{formatted_balance_value}\n')
-                print("\033[F-----------------------------------------------------------")
+                print("\033[F"+"-"*59)
                 # Convert total_balance to Decimal
                 total_balance_decimal = Decimal(str(total_balance))
                 total_balance_value = total_balance_decimal * formatted_price
@@ -1813,6 +1813,13 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
       
 def prepareTransaction(filename, password, totp_code, amount, sender, private_key, receiver, message, node):
     
+    message_extension = "Sent From Denaro Wallet Client v0.0.6-beta"
+    max_message_length = 256 - len(message_extension) + 3
+    if len(message) > max_message_length:
+        logging.error(f"Message length exceeded, must be between 0-{max_message_length} characters.")
+        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+        return None
+
     node = validate_and_select_node(node)
     if node is None:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
@@ -1828,8 +1835,10 @@ def prepareTransaction(filename, password, totp_code, amount, sender, private_ke
     private_key = int(private_key, 16)
 
     # Handle message variable
-    if message is None:
-        message = None
+    if not message:
+        message = message_extension
+    else:
+        message = message+" | "+message_extension
     try:
         message = bytes.fromhex(message)
     except ValueError:

@@ -96,7 +96,7 @@ deactivate
         ---
         
         #### `generate address`
-        **Overview**: The `genrate address` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (e.g. private_key, public_key, and address).
+        **Overview**: The `generate address` sub-command is used to generate new addresses and add them to wallet entry data. For encrypted wallets only the cryptographic keys for addresses are added, which are later used during decryption to derive the data associated with them (e.g. private_key, public_key, and address).
 
         <details>
         <summary>Usage:</summary>
@@ -124,7 +124,7 @@ deactivate
         ---
         
         #### `generate paperwallet`
-        **Overview**: The `genrate paperwallet` sub-command is used to generate a Denaro paper wallet either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.
+        **Overview**: The `generate paperwallet` sub-command is used to generate a Denaro paper wallet either by using an address that is associated with a wallet file, or directly via a private key that corresponds to a particular address.
              
         * *If specifying an address that is associated with a wallet file then the generated paper wallet will be stored in `./wallets/paper_wallet/[walletName]/`.*             
         * *If specifying a private key that corresponds to a particular address then the generated paper wallet will be stored in `./wallets/paper_wallets/`.* 
