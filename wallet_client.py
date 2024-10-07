@@ -1606,7 +1606,7 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
     
     # Push transaction to node
     try:
-        request = requests.get(f'{node}/push_tx', {'tx_hex': transaction.hex()}, timeout=10)
+        request = requests.post(f'{node}/push_tx', {'tx_hex': transaction.hex()}, timeout=10)
         request.raise_for_status()
         response = request.json()
                 
