@@ -26,7 +26,7 @@ sys.path.insert(0, dir_path + "/denaro")
 sys.path.insert(0, dir_path + "/denaro/wallet")
 sys.path.insert(0, dir_path + "/denaro/wallet/utils")
 
-from denaro.wallet.utils.wallet_generation_util import generate, generate_from_private_key, string_to_point, sha256, is_valid_mnemonic
+from denaro.wallet.utils.wallet_generation_util import generate, generate_from_private_key, generate_mnemonic, string_to_point, sha256, is_valid_mnemonic
 from denaro.wallet.utils.cryptographic_util import EncryptDecryptUtils, TOTP
 from denaro.wallet.utils.verification_util import Verification
 from denaro.wallet.utils.data_manipulation_util import DataManipulation
@@ -430,12 +430,14 @@ def decrypt_and_parse_mnemonic(encrypted_json, password, totp_secret, hmac_salt,
         Returns:
         - str: A string containing the decrypted sequence of mnemonic words.
     """
-    decrypted_words = [
-        EncryptDecryptUtils.decrypt_data(
-            json.loads(EncryptDecryptUtils.decrypt_data(encrypted_index, password, totp_secret, hmac_salt, verification_salt, stored_verifier))["word"],
-            password, totp_secret, hmac_salt, verification_salt, stored_verifier
-        ) for encrypted_index in encrypted_json
-    ]
+    decrypted_words = []
+
+    for encrypted_index in encrypted_json:
+        decrypted_data = EncryptDecryptUtils.decrypt_data(encrypted_index, password, totp_secret, hmac_salt, verification_salt, stored_verifier)
+        word = json.loads(decrypted_data)["word"]
+        decrypted_word = EncryptDecryptUtils.decrypt_data(word, password, totp_secret, hmac_salt, verification_salt, stored_verifier)
+        decrypted_words.append(decrypted_word)
+
     result =  " ".join(decrypted_words)
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
@@ -546,10 +548,12 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 print()
         
     if new_wallet:
+        wallet_version = "0.2.3"
         logging.info("new_wallet is set to True.")
         encrypt = stored_encrypt_param    
         deterministic = stored_deterministic_param
     else:
+        wallet_version = data['wallet_data']['version']
         logging.info("new_wallet is set to False.")
 
     # Handle different scenarios based on whether the wallet is encrypted
@@ -560,7 +564,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             # Handle creation of a new encrypted wallet
             data, totp_secret, hmac_salt, verification_salt, stored_verifier = handle_new_encrypted_wallet(password, totp_code, use2FA, filename, deterministic)
             if not data:
-                logging.error(f"Error: Data from handle_new_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
+                #logging.error(f"Error: Data from handle_new_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return None
         else:
@@ -581,17 +585,17 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
         # If deterministic flag is set, generate addresses in a deterministic way
         if deterministic:
             logging.info("deterministic is set to True.")
-            if not password:
-                    logging.error("Password is required to derive the deterministic address.")
-                    DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-                    return None
+            if not password and not new_wallet and not wallet_version == "0.2.3":
+                logging.error("The wallet type is deterministic and a password is required to derive addresses.")
+                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                return None
             if new_wallet:
                 logging.info("Generating deterministic wallet data.")         
                 # Generate the initial data for a new deterministic wallet
                 if mnemonic:
-                    wallet_data = generate(mnemonic_phrase=mnemonic, passphrase=password, deterministic=True)
+                    wallet_data = generate(mnemonic_phrase=mnemonic, passphrase=password, deterministic=True, wallet_version=wallet_version)
                 else:
-                    wallet_data = generate(passphrase=password, deterministic=True)
+                    wallet_data = generate(passphrase=password, deterministic=True, wallet_version=wallet_version)
                 if encrypt:
                     logging.info("Data successfully generated for new encrypted deterministic wallet.")                   
                     logging.info("Parseing and encrypting master mnemonic.")
@@ -603,7 +607,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                     data = {
                         "wallet_data": {
                             "wallet_type": "deterministic",
-                            "version": "0.2.2",
+                            "version": "0.2.3",
                             "entry_data": {
                                 "master_mnemonic": wallet_data["mnemonic"],
                                 "entries":[]
@@ -624,7 +628,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                     for _ in range(amount):
                         if index + entries_generated < 256:
                             entries_generated += 1
-                            generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=index+entries_generated, deterministic=True)
+                            generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=index+entries_generated, deterministic=True, wallet_version=wallet_version)
                             wallet_data.append(generated_data)
                         if index + len(wallet_data) >= 256:
                             print("Maximum wallet entries reached.\n")
@@ -633,25 +637,26 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 else:
                     # Use the existing mnemonic directly if it's not encrypted
                     mnemonic = data["wallet_data"]["entry_data"]["master_mnemonic"]
-                    logging.info("Validating passphrase used for address derivation.")
+                    logging.info("Validating password used for address derivation.")
                     # Verify if the provided passphrase correctly derives child keys.
                     # Derive the first child key using the master mnemonic and the given passphrase.
-                    first_child_data = generate(mnemonic_phrase=mnemonic,passphrase=password, index=0, deterministic=True)
+                    first_child_data = generate(mnemonic_phrase=mnemonic,passphrase=password, index=0, deterministic=True, wallet_version=wallet_version)
                     # Check if the derived child's private key matches the private key of the first entry in the stored wallet.
                     if first_child_data["private_key"] != data["wallet_data"]["entry_data"]["entries"][0]["private_key"]:
-                        # Log an error message if the private keys do not match, indicating that the provided passphrase is incorrect.
-                        logging.error("Invalid passphrase. To derive the deterministic address, please re-enter the correct passphrase and try again.")
-                        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-                        return None
+                        if not wallet_version == "0.2.3":
+                            # Log an error message if the private keys do not match, indicating that the provided passphrase is incorrect.
+                            logging.error("Invalid password. To generate the address, please re-enter the correct password and try again.")
+                            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+                            return None
                     else:
-                        logging.info("Passphrase validated.")
+                        logging.info("Password validated.")
                         wallet_data = []
                         entries_generated = -1
                         logging.info("Generating deterministic wallet data.")
                         for _ in range(amount):
                             if index + entries_generated < 256:
                                 entries_generated += 1
-                                generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=index + entries_generated, deterministic=True)
+                                generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=index + entries_generated, deterministic=True, wallet_version=wallet_version)
                                 wallet_data.append(generated_data)
                             if index + len(wallet_data) >= 256:
                                 print("Maximum wallet entries reached.\n")
@@ -683,7 +688,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
                 data = {
                     "wallet_data": {
                         "wallet_type": "non-deterministic",
-                        "version": "0.2.2",
+                        "version": "0.2.3",
                         "entry_data": {
                             "entries":[]
                         }
@@ -710,7 +715,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             # Validate private key using regex pattern
             private_key_pattern = r'^(0x)?[0-9a-fA-F]{64}$'
             if not re.match(private_key_pattern, private_key):
-                logging.error("The private key provided is not valid.")
+                logging.error("The provided private key is not valid.")
                 DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                 return None
             
@@ -796,7 +801,7 @@ def generateAddressHelper(filename, password, totp_code=None, new_wallet=False, 
             result = f"Successfully generated and stored {entries_generated + 1} wallet entries."
     else:
         result = f"Successfully imported wallet entry.\n\n{warning}\nImported Private Key #{len(data['wallet_data']['entry_data']['imported_entries'])}: 0x{wallet_data[0]['private_key']}\nAddress: {wallet_data[0]['address']}"
-        print(result)
+
     DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
 
@@ -882,7 +887,9 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     index = len(data["wallet_data"]["entry_data"]["entries"])
     imported_entries_length = len(data["wallet_data"]["entry_data"].get("imported_entries", []))
     combined_length = index + imported_entries_length
-    
+
+    wallet_version = data['wallet_data']['version']
+
     # Extract cryptographic components for encrypted wallets
     if is_encrypted:
         hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
@@ -903,15 +910,22 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     # Special case: If only 'mnemonic' is requested and the wallet is deterministic
     if fields == ["mnemonic"] and deterministic:
         master_mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier) if is_encrypted else data["wallet_data"]["entry_data"]["master_mnemonic"]
-        master_mnemonic_json = json.dumps({"entry_data": {"master_mnemonic": master_mnemonic}}, indent=4)
-        print(f"Wallet Data for: {filename}")
-        result = master_mnemonic_json if to_json else f"Master Mnemonic: {master_mnemonic}"
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
-        return result
+        if master_mnemonic:
+            master_mnemonic_json = json.dumps({"entry_data": {"master_mnemonic": master_mnemonic}}, indent=4)
+            print(f"Wallet Data for: {filename}")
+            result = master_mnemonic_json if to_json else f"Master Mnemonic: {master_mnemonic}"
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
+            return result
+        else:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None
 
     mnemonic = ""
     if deterministic:
         mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier) if is_encrypted else data["wallet_data"]["entry_data"]["master_mnemonic"]
+        if not mnemonic:
+            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
+            return None
 
     generated_entries = []
     imported_entries = []
@@ -947,7 +961,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
         if not is_import:
             if deterministic:
                 # Generate data for deterministic wallet with index
-                generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=entry_with_encrypted_values['id'] - 1, deterministic=deterministic, fields=fields)
+                generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=entry_with_encrypted_values['id'] - 1, deterministic=deterministic, fields=fields, wallet_version=wallet_version)
                 if "mnemonic" in generated_data:
                     del generated_data["mnemonic"]
                 
@@ -959,7 +973,7 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
                 #        generated_data["private_key"] = entry_with_encrypted_values['private_key']
             else:
                 # Generate data for non-deterministic wallet without index
-                generated_data = generate(mnemonic_phrase=entry_with_encrypted_values['mnemonic'], deterministic=deterministic, fields=fields)
+                generated_data = generate(mnemonic_phrase=entry_with_encrypted_values['mnemonic'], deterministic=deterministic, fields=fields, wallet_version=wallet_version)
         else:
             # Generate data from private key for imported entries
             generated_data = generate_from_private_key(private_key_hex=entry_with_encrypted_values["private_key"], fields=fields)
@@ -1142,334 +1156,6 @@ def decryptWalletEntries(filename, password, totp_code=None, address=[], fields=
     DataManipulation.secure_delete([var for var in locals().values() if var is not None])
     return None
 
-# Keeping this function as a fallback just in case there are issues with the new decryptWalletEntries function
-def decryptWalletEntries_old(filename, password, totp_code=None, address=[], fields=[], to_json=False, show=None):
-    """Overview:
-        The `decryptWalletEntries` function is designed to decrypt wallet entries stored within a specified file, 
-        implementing an intricate decryption process with the collaboration of multiple helper functions.
-    
-        Initially, the function loads encrypted wallet data and validates its encrypted status. After validating and 
-        ensuring the data is encrypted, cryptographic parameters are extracted using the `handle_existing_encrypted_wallet`
-        function. These cryptographic parameters are used for subsequent decryption steps. The function then distinguishes
-        between deterministic and non-deterministic wallets, applying specific decryption and data generation approaches
-        respectively, based on the wallet type.
-    
-        The core decryption process involves iterating through each entry in the wallet data. The decryption relies on the 
-        function `decrypt_data`, which performs the multi-layered decryption process, which includes the ChaCha20-Poly1305 
-        and AES-GCM decryption layers.
-    
-        For deterministic wallets, only the master mnemonic phrase is decrypted using the `decrypt_and_parse_mnemonic`function. 
-        Following decryption, the master mnemonic is utilized, along with a user-defined password and an entry index (ID), as 
-        input parameters for the `generate` function. The `generate` function is used to deterministically produce additional wallet
-        entry data, consisting of the private key, public key, and address
-    
-        Conversely, for non-deterministic wallets, each wallet entry has its own unique mnemonic phrase that must undergo the same 
-        decryption process. Once decrypted, the mnemonic is passed to the generate function to derive the corresponding wallet 
-        entry data: private key, public key, and address. 
-        
-        The procedures described for both deterministic and non-deterministic wallets facilitate the independent and secure
-        generation of supplementary wallet data. This methodology was adopted as an alternative to directly storing the complete data
-        set (private key, public key, and address) for every wallet entry. Instead, encrypted wallet files are designed to contain only
-        the minimal data required to derive these core components. During testing, this approach has been shown to significantly reduce
-        the file size of encrypted wallet files.
-        
-        After decrypting and generating additional entry data, the function appends the entry data to a dictionary. This dictionary
-        is subsequently ordered, and structured in a way that is dependant on the wallet type (deterministic or non-deterministic).
-        The end result should be a JSON dictionary which closely matches the un-encrypted version of the wallet data.
-        
-        The latter stages of the function provides options to filter and format entry data based on the given arguments.
-        Entry data can be filtered by specific addresses or specific field names and then formatted according to the 
-        `pretty` flag, yielding either a prettified JSON string or a dictionary.
-        
-        Parameters:
-        - filename (str): The path to the file that contains the encrypted wallet data.
-        - password (str): User's password used for cryptographic operations during decryption.
-        - totp_code (str, optional): A Time-based One-Time Password used in Two-Factor Authentication. Required if TFA was enabled during wallet encryption.
-        - address (str, optional): If specified, filters the results to return only the data associated with this address. Otherwise, all entries are returned.
-        - fields (list of str, optional): List of fields to decrypt and return. If not specified, all fields are decrypted.
-        - pretty (bool, optional): If True, outputs a prettified JSON string. Otherwise, returns a dictionary.
-    
-        Returns:
-        - dict or str: If "pretty" is True, returns a prettified JSON string. Otherwise, returns a dictionary of decrypted wallet entries and fields.
-    """
-    #Make sure that the wallet directories exists
-    ensure_wallet_directories_exist()
-    
-    #Normalize filename
-    filename = get_normalized_filepath(filename)
-    
-    # Load the existing wallet data from the specified file
-    data, wallet_exists = _load_data(filename, False)
-
-    # If wallet dose not exist return None
-    if not wallet_exists:
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        return None
-    
-    # Convert the wallet data segment to a JSON string and check if it appears to be encrypted
-    data_segment = json.dumps(data["wallet_data"])
-    is_encrypted = is_wallet_encrypted(data_segment)    
-    
-    # Initialize a flag to check if the wallet type is deterministic
-    deterministic = False
-
-    # Check if the wallet type is present in the data and set the deterministic flag accordingly
-    if "wallet_type" in data["wallet_data"]:
-        deterministic = data["wallet_data"]["wallet_type"] == "deterministic"
-    
-    index = len(data["wallet_data"]["entry_data"]["entries"])
-    
-    imported_entries_length = 0
-    if "imported_entries" in data["wallet_data"]["entry_data"]:
-        imported_entries_length = len(data["wallet_data"]["entry_data"]["imported_entries"])
-
-    if is_encrypted:
-        # Extract necessary cryptographic salts and secrets for the encrypted wallet
-        hmac_salt, verification_salt, stored_verifier, totp_secret = handle_existing_encrypted_wallet(filename, data, password, totp_code, deterministic)
-        
-        # Ensure none of the cryptographic values are missing
-        if not hmac_salt or not verification_salt or not stored_verifier:
-            #print(f"Error: Data from handle_existing_encrypted_wallet is None!\nDebug: HMAC Salt: {hmac_salt}, Verification Salt: {verification_salt}, Stored Verifier: {stored_verifier}")
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None
-        
-        # Handle warnings and messages
-        if 'send' in sys.argv:
-            print("\nA private key is required to send funds. \nSince a private key has not been provided, the wallet client will attempt to decrypt each entry in the wallet file until it finds the private key associated with the address specified. \nYou can use the '-private-key' argument to make this process alot faster. However, doing this is not secure and can put your funds at risk.\n")
-        
-        if index + imported_entries_length >= 32:
-            logging.warning(f"The encrypted wallet file contains {index} entries and is quite large. Decryption {'and balance requests ' if 'balance' in sys.argv else ''}may take a while.\n")
-    else:
-        if index + imported_entries_length >= 32 and 'balance' in sys.argv:
-            logging.warning(f"The wallet file contains {index} entries and and is quite large. Balance requests for entire wallets may take a while.\n")
-
-    # If the wallet is deterministic, decrypt and parse the mnemonic phrase
-    if deterministic:
-        if is_encrypted:
-            mnemonic = decrypt_and_parse_mnemonic(data["wallet_data"]["entry_data"]["key_data"], password, totp_secret, hmac_salt, verification_salt, stored_verifier)
-        else:
-            mnemonic = data["wallet_data"]["entry_data"]["master_mnemonic"]
-            
-    # List to hold decrypted wallet entries
-    decrypted_entries = []
-
-    # If no fields are specified then all fields are considered
-    if fields == []:
-        fields = ["mnemonic", "id", "private_key", "public_key", "address","is_import"]    
-    
-    entry_count = 0
-    address_found = False
-    is_import = False
-    
-    if show:
-        if "imported" in show:
-            if "imported_entries" in data["wallet_data"]["entry_data"]:
-                index = 0
-                del data["wallet_data"]["entry_data"]["entries"]
-        
-        if "generated" in show:
-            if "imported_entries" in data["wallet_data"]["entry_data"]:
-                imported_entries_length = 0
-                del data["wallet_data"]["entry_data"]["imported_entries"]
-
-    for entry_data in data["wallet_data"]["entry_data"]:        
-        if entry_data != "key_data" and entry_data != "master_mnemonic":            
-            for entry in data["wallet_data"]["entry_data"][entry_data]:
-                if entry_data == "imported_entries":
-                    is_import = True                
-                if is_encrypted:
-                    entry_count += 1        
-                    # If wallet is encrypted, decrypt each entry in the wallet data
-                    entry_with_encrypted_values = json.loads(EncryptDecryptUtils.decrypt_data(entry, password, totp_secret, hmac_salt, verification_salt, stored_verifier))            
-                    fully_decrypted_entry = {}
-                    for key, encrypted_value in entry_with_encrypted_values.items():
-                        fully_decrypted_entry[key] = EncryptDecryptUtils.decrypt_data(encrypted_value, password, totp_secret, hmac_salt, verification_salt, stored_verifier)        
-                    # Generate required data fields based on the mnemonic phrase and deterministic flag
-                    generated_data = {}
-                    if not is_import:
-                        if not deterministic:
-                            generated_data = generate(mnemonic_phrase=fully_decrypted_entry["mnemonic"], deterministic=deterministic,fields=fields)
-                            if address and not "address" in fields:
-                                generated_data.update(generate(mnemonic_phrase=fully_decrypted_entry["mnemonic"], deterministic=deterministic,fields=["address"]))                        
-                        else:
-                            generated_data = generate(mnemonic_phrase=mnemonic, passphrase=password, index=int(fully_decrypted_entry["id"]) - 1, deterministic=deterministic,fields=fields)                            
-                            if not "id" in fields:
-                                generated_data.update(generate(mnemonic_phrase=mnemonic, passphrase=password, index=int(fully_decrypted_entry["id"]) - 1, deterministic=deterministic,fields=["id"]))                            
-                            if address and not "address" in fields:
-                                generated_data.update(generate(mnemonic_phrase=mnemonic, passphrase=password, index=int(fully_decrypted_entry["id"]) - 1, deterministic=deterministic,fields=["address"]))                            
-                            generated_data["id"] = int(generated_data["id"]) + 1                            
-                            if "mnemonic" in generated_data:
-                                del generated_data["mnemonic"]
-                    else:
-                        generated_data = generate_from_private_key(private_key_hex=fully_decrypted_entry["private_key"])
-                        generated_data["is_import"] = is_import
-                    # Update the decrypted entry with the generated data
-                    fully_decrypted_entry.update(generated_data)        
-                    if 'send' in sys.argv or 'generatepaperwallet' in sys.argv:
-                        print(f"\rDecrypting wallet entry {entry_count} of {index + imported_entries_length} | Address: {generated_data['address']}", end='')
-                        if address[0] in fully_decrypted_entry['address']:
-                            print("\nAddress Found.\n")
-                            decrypted_entries = []
-                            decrypted_entries.append(fully_decrypted_entry)
-                            address_found = True
-                            break
-                        else:
-                            decrypted_entries = []
-                    else:
-                        print(f"\rDecrypting wallet entry {entry_count} of {index + imported_entries_length}", end='')
-                else:
-                    fully_decrypted_entry = {}
-                    for key, value in entry.items():
-                        fully_decrypted_entry[key] = value
-                    if is_import:
-                        fully_decrypted_entry["is_import"] = is_import        
-                decrypted_entries.append(fully_decrypted_entry)
-        if 'send' in sys.argv and address_found:
-            break            
-
-    if is_encrypted and not address_found:
-        print("\n")
-
-    # Initialize variables to hold addresses not found for inclusion and exclusion
-    not_found_inclusion = []
-    not_found_exclusion = []
-    not_found_all = []
-    
-    # Initialize a set to hold addresses to be excluded
-    addresses_to_exclude = set()
-    
-    # Initialize a list to hold unique filtered entries based on address
-    unique_filtered_entries = []
-    
-    # Existing decrypted addresses
-    all_decrypted_addresses = [entry.get("address") for entry in decrypted_entries]
-
-    # If an address is specified, filter the decrypted entries based on that address
-    if address:
-        for addr in address:
-            if addr.startswith("-"):
-                if addr[1:] not in all_decrypted_addresses:
-                    not_found_exclusion.append(addr[1:])
-                addresses_to_exclude.add(addr[1:])
-            else:
-                filtered_entries = [entry for entry in decrypted_entries if entry.get("address") == addr]
-                if filtered_entries:
-                    unique_filtered_entries.extend(filtered_entries)
-                else:
-                    not_found_inclusion.append(addr)
-
-        # Filter logic for address exclusion
-        if addresses_to_exclude:
-            unique_filtered_entries = [entry for entry in unique_filtered_entries if entry.get("address") not in addresses_to_exclude]
-            if not unique_filtered_entries:
-                unique_filtered_entries = [entry for entry in decrypted_entries if entry.get("address") not in addresses_to_exclude]
-                decrypted_entries = unique_filtered_entries
-
-        # Remove duplicate and excluded addresses from unique_filtered_entries
-        seen_addresses = set()
-        unique_filtered_entries = [entry for entry in unique_filtered_entries if entry['address'] not in (seen_addresses or addresses_to_exclude) and not seen_addresses.add(entry['address'])]
-        
-        showed_warning = False
-        # Check if there are any addresses not found for inclusion or exclusion
-        if not_found_inclusion or not_found_exclusion:
-            not_found_all = list(set(not_found_inclusion + not_found_exclusion))
-            not_found_all.sort(key=lambda x: address.index(x) if x in address else address.index('-' + x))
-            if not 'send' in sys.argv:
-                logging.warning(f"The following {'address is' if len(not_found_all) == 1 else 'addresses are'} not associated with this wallet: {', '.join(not_found_all)}\n")
-                showed_warning = True
-            else:
-                logging.error(f"The address specified is not associated with this wallet.")
-                DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-                return None
-    
-        # Error logic
-        if not unique_filtered_entries:
-            if not 'send' in sys.argv and not showed_warning:
-                if all(addr in addresses_to_exclude for addr in all_decrypted_addresses):
-                    logging.error("All of the addresses associated with the wallet have been excluded. There is nothing to return.\n")# Returning no entries.")
-                else:
-                    logging.error(f"{'The address specified is not' if len(address) == 1 else 'None of the addresses specified are'} associated with this wallet.\n")# Returning all wallet entries...")        
-        else:
-            # Sort and return unique_filtered_entries
-            unique_filtered_entries.sort(key=lambda x: int(x['id']))
-            decrypted_entries = unique_filtered_entries
-    
-    # Specify the desired order of fields for output        
-    ordered_field_names = ["id", "mnemonic", "private_key", "public_key", "address", "is_import"]
-        
-    # If specific fields are requested, filter and order the decrypted entries based on those fields
-    if fields:        
-        decrypted_entries = [OrderedDict((field, entry[field]) for field in ordered_field_names if field in fields and field in entry) for entry in decrypted_entries]
-    else:
-        # Ensure the order of fields in the output, even if no specific fields are requested
-        decrypted_entries = [OrderedDict((field, entry[field]) for field in ordered_field_names if field in entry) for entry in decrypted_entries]
-    
-    imported_entries = []
-    for entry in decrypted_entries:
-        if "is_import" in entry:
-            imported_entries.append(entry)
-
-    for entry in imported_entries:
-        if entry in decrypted_entries:
-            del entry["is_import"]
-            decrypted_entries.remove(entry)
-    
-    if not is_encrypted and not all(addr in addresses_to_exclude for addr in all_decrypted_addresses) and not "balance" in sys.argv and not "send" in sys.argv and not "paperwallet" in sys.argv:
-        print("Wallet data does not appear to be encrypted. Returning un-encrypted data.\n")
-
-    # Convert the decrypted entries to a readable format based on the `pretty` flag
-    if to_json:
-        if "mnemonic" in fields and deterministic:
-            formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries}}, indent=4)
-            if len(imported_entries) > 0:
-                formatted_output = json.dumps({"entry_data":{"master_mnemonic": mnemonic, "entries": decrypted_entries, "imported_entries": imported_entries}}, indent=4)
-        else:            
-            formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries}}, indent=4)
-            if len(imported_entries) > 0:
-                formatted_output = json.dumps({"entry_data":{"entries": decrypted_entries, "imported_entries": imported_entries}}, indent=4)
-        
-        # Convert JSON string back to dictionary
-        formatted_output = json.loads(formatted_output)
-    
-        # Remove 'entries' key if empty and imported entries are only being returned
-        if show == "imported" and formatted_output["entry_data"].get("entries") == []:
-            del formatted_output["entry_data"]["entries"]    
-        
-        # Convert back to JSON string
-        if to_json:
-            formatted_output = json.dumps(formatted_output, indent=4)
-        else:
-            formatted_output = json.dumps(formatted_output)
-            
-        result = formatted_output
-        DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])    
-        return result    
-    else:
-        print(f"Wallet Data for: {filename}")
-        if len(decrypted_entries) > 0:
-            print("--------------------------------Internally Generated Entries--------------------------------")   
-            if "mnemonic" in fields and deterministic:
-                print(f"Master Mnemonic: {mnemonic}\n")
-            for entry in decrypted_entries:
-                for key, value in entry.items():
-                    if key == 'id':
-                        formatted_key = 'Wallet Entry'
-                        print(f"{formatted_key} #{value}:")
-                    else:
-                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
-                        print(f"{formatted_key}: {value}")
-                print()         
-        if len(imported_entries) > 0:
-            print("--------------------------------------Imported Entries--------------------------------------")
-            for entry in imported_entries:
-                for key, value in entry.items():
-                    if key == 'id':
-                        formatted_key = 'Imported Entry'
-                        print(f"{formatted_key} #{value}:")
-                    else:
-                        formatted_key = ' '.join(word.capitalize() for word in key.split('_'))
-                        print(f"{formatted_key}: {value}")
-                print()   
     
 def generatePaperWallet(filename, password, totp_code, address, private_key, file_type):
     try:
@@ -1864,7 +1550,7 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
     for key in private_key:
         if send_back_address is None:
             send_back_address = sender
-        balance, address_inputs, is_pending, pending_transactions, is_error = get_address_info(sender, node)
+        balance, address_inputs, is_pending, pending_transactions, pending_transaction_hashes, is_error = get_address_info(sender, node)
         if is_error:
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return None
@@ -1880,9 +1566,9 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
             if pending_transactions is not None:
                 print("\nTransactions awaiting confirmation:")
                 count = 0
-                for tx in pending_transactions:
+                for tx in pending_transaction_hashes:
                     count += 1
-                    print(f"{count}: {tx[0]}")
+                    print(f"{count}: {tx}")
         else:
             logging.error('No spendable outputs.')
             if not balance > 0:
@@ -1893,7 +1579,7 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
     # Check if accumulated inputs are sufficient
     if sum(input.amount for input in inputs) < amount:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        print("The associated address dose not have enough funds.")
+        logging.error("The associated address dose not have enough funds.")
         return None
 
     # Select appropriate transaction inputs
@@ -1907,7 +1593,7 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
     transaction_amount = sum(input.amount for input in transaction_inputs)
     if transaction_amount < amount:
         DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not transaction_amount])
-        logging.error(f"Consolidate outputs: send {transaction_amount} Denari to yourself")
+        logging.error(f"Consolidate outputs: send {transaction_amount} Denaro to yourself")
         return None
     
     # Create the transaction
@@ -1961,12 +1647,13 @@ def get_address_info(address: str, node: str):
         if not response.get('ok'):
             logging.error(response.get('error'))
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-            return None, None, None, None, True
+            return None, None, None, None, None, True
 
         result = response['result']
         is_pending = False
         tx_inputs = []
         pending_spent_outputs = []
+        pending_transaction_hashes = []
 
         for value in result['pending_spent_outputs']:
             pending_spent_outputs.append((value['tx_hash'], value['index']))
@@ -1981,7 +1668,12 @@ def get_address_info(address: str, node: str):
             tx_input.public_key = string_to_point(address)
             tx_inputs.append(tx_input)
 
-        final_result = Decimal(result['balance']), tx_inputs, is_pending, pending_spent_outputs, False
+        if is_pending:
+            for value in result['pending_transactions']:
+                pending_transaction_hashes.append((value['hash']))
+        
+        final_result = Decimal(result['balance']), tx_inputs, is_pending, pending_spent_outputs, pending_transaction_hashes, False
+
         DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not final_result])
         return final_result
 
@@ -1989,19 +1681,19 @@ def get_address_info(address: str, node: str):
         # Handles exceptions that occur during the request
         print(f"Error during request to node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        return None, None, None, None, True
+        return None, None, None, None, None, True
 
     except ValueError as e:
         # Handles JSON decoding errors
         print(f"Error decoding JSON response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        return None, None, None, None, True
+        return None, None, None, None, None, True
 
     except KeyError as e:
         # Handles missing keys in response data
         print(f"Missing expected data in response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
-        return None, None, None, None, True
+        return None, None, None, None, None, True
 
 def get_balance_info(address: str, node: str):
     """
@@ -2238,10 +1930,10 @@ def check_args(parser, args):
             parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required to encrypt the wallet and for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
 
         # -deterministic alone requires -password
-        if args.deterministic and not args.password:
-            sorted_args = sort_arguments_based_on_input(['-deterministic','-phrase', '-password'])
-            DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
-            parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
+        #if args.deterministic and not args.password:
+        #    sorted_args = sort_arguments_based_on_input(['-deterministic','-phrase', '-password'])
+        #    DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not sorted_args])
+        #    parser.error(f"{sorted_args} requires the -password argument to be set.\n\nContext: A password is required for deterministic address generation{' using the provided mnemonic' if args.phrase else ''}.")
     
         # -encrypt alone requires -password
         if args.encrypt and not args.password:

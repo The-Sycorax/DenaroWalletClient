@@ -100,9 +100,9 @@ class DataManipulation:
             if attempts_left:
                 print(f"\nPassword Attempts Left: {attempts_left}")
             if attempts_left <= 5 and attempts_left > 3 and attempts_left != 0:
-                logging.warning(f"Password attempts left are approaching 0, after which any existing wallet data will be ERASED AND POTENTIALLY UNRECOVERABLE!!")
+                logging.warning(f"Password attempts are approaching 0, afterwards any existing wallet data will be erased and potentially unrecoverable!!")
             if attempts_left <= 3 and attempts_left != 0:
-                logging.critical(f"PASSWORD ATTEMPTS LEFT ARE APPROACHING 0, AFTER WHICH ANY EXISTING WALLET DATA WILL BE ERASED AND POTENTIALLY UNRECOVERABLE!!")
+                logging.critical(f"PASSWORD ATTEMPTS ARE APPROACHING 0, AFTERWARDS ANY EXISTING WALLET DATA WILL BE ERASED AND POTENTIALLY UNRECOVERABLE!!")
             if attempts_left == 0:
                 print(f"\nPassword Attempts Left: {attempts_left}")
                 DataManipulation.delete_wallet(filename, data)

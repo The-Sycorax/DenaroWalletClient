@@ -560,7 +560,7 @@ class UserPrompts:
                 if data:
                     print()
                     # Call wait_for_input and allow up to 5 seconds for the user to cancel overwrite operation
-                    if not UserPrompts.wait_for_input(timeout=5):
+                    if not UserPrompts.wait_for_input(timeout=10):
                         data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None])
                         return
                     # If no input is recieved within 5 seconds then continue

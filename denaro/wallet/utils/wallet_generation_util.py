@@ -368,7 +368,10 @@ def is_valid_mnemonic(mnemonic_phrase):
     data_manipulation_util.DataManipulation.secure_delete([var for var in locals().values() if var is not None and var is not result])
     return result
 
-def generate(mnemonic_phrase=None, passphrase=None, index=0, deterministic=False, fields=None):
+def generate_mnemonic():
+    return mnemonic.Mnemonic("english").generate()
+
+def generate(mnemonic_phrase=None, passphrase=None, index=0, deterministic=False, fields=None, wallet_version=None):
     """
     Generate cryptographic keys and addresses.
     
@@ -382,6 +385,10 @@ def generate(mnemonic_phrase=None, passphrase=None, index=0, deterministic=False
     Returns:
         dict: Dictionary containing the generated information.
     """
+
+    if wallet_version == "0.2.3":
+        passphrase = None
+        
     # Generate a 12-word mnemonic if not provided
     if not mnemonic_phrase:
         mnemonic_phrase = mnemonic.Mnemonic("english").generate()
