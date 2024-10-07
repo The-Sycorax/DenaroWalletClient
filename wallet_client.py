@@ -1703,8 +1703,8 @@ def checkBalance(filename, password, totp_code, address, node, to_json, to_file,
             formatted_price = Decimal(str(formatted_price))
         else:
             formatted_price = Decimal('0')
-            currency_code = "USD"
-            currency_symbol = "$"
+            #currency_code = "USD"
+            #currency_symbol = "$"
 
         formatted_price_str = "{:.8f}".format(formatted_price)
 
@@ -1925,7 +1925,7 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
         response = request.json()
                 
         if not response.get('ok'):
-            logging.error(response.get('error'))
+            print(response.get('error'))
             DataManipulation.secure_delete([var for var in locals().values() if var is not None])
             return None
     
@@ -1934,19 +1934,19 @@ def create_transaction(private_key, sender, receiving_address, amount, message: 
     
     except requests.RequestException as e:
         # Handles exceptions that occur during the request
-        logging.error(f"Error during request to node: {e}")
+        print(f"Error during request to node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None
 
     except ValueError as e:
         # Handles JSON decoding errors
-        logging.error(f"Error decoding JSON response: {e}")
+        print(f"Error decoding JSON response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None
 
     except KeyError as e:
         # Handles missing keys in response data
-        logging.error(f"Missing expected data in response: {e}")
+        print(f"Missing expected data in response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None
 
@@ -1987,19 +1987,19 @@ def get_address_info(address: str, node: str):
 
     except requests.RequestException as e:
         # Handles exceptions that occur during the request
-        logging.error(f"Error during request to node: {e}")
+        print(f"Error during request to node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, None, None, True
 
     except ValueError as e:
         # Handles JSON decoding errors
-        logging.error(f"Error decoding JSON response: {e}")
+        print(f"Error decoding JSON response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, None, None, True
 
     except KeyError as e:
         # Handles missing keys in response data
-        logging.error(f"Missing expected data in response: {e}")
+        print(f"Missing expected data in response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, None, None, True
 
@@ -2064,19 +2064,19 @@ def get_balance_info(address: str, node: str):
     
     except requests.RequestException as e:
         # Handles exceptions that occur during the request
-        logging.error(f"Error during request to node: {e}")
+        print(f"Error during request to node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, True
 
     except ValueError as e:
         # Handles JSON decoding errors
-        logging.error(f"Error decoding JSON response: {e}")
+        print(f"Error decoding JSON response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, True
 
     except KeyError as e:
         # Handles missing keys in response data
-        logging.error(f"Missing expected data in response: {e}")
+        print(f"Missing expected data in response from node: {e}")
         DataManipulation.secure_delete([var for var in locals().values() if var is not None])
         return None, None, True
 
@@ -2096,37 +2096,50 @@ def get_price_info(currency_code=None):
             cmc_response = requests.get(cmc_url)
             cmc_response.raise_for_status()
             price_usd = Decimal(cmc_response.json()['data']['priceUsd']).quantize(Decimal('0.0000001'))
-        
-        except requests.RequestException:
+        except requests.RequestException as e:
+            print(f"\nError during request to CoinMarketCap API:\n {e}")
             # Fallback URL if the first request fails
-            fallback_url = 'https://cmc-api.denaro.is/price'
-            fallback_response = requests.get(fallback_url)
-            fallback_response.raise_for_status()
-            price_usd = Decimal(fallback_response.json()['USD']).quantize(Decimal('0.00000001'))         
+            try:
+                fallback_url = 'https://cmc-api.denaro.is/price'
+                print(f"\nUsing fallback API at: {fallback_url}")
+                fallback_response = requests.get(fallback_url)
+                fallback_response.raise_for_status()
+                price_usd = Decimal(fallback_response.json()['USD']).quantize(Decimal('0.00000001'))
+            except requests.RequestException as e:
+                print(f"\nError during request to fallback API:\n {e}")
+                print("\nFailed to get the real-world price of Denaro.")
+                price_usd = Decimal('0')
 
         # Early return for USD
         if currency_code == 'USD':
             return price_usd
-
+        
+        try:
         # Exchange rate for fiat currencies
-        currency_exchange_rate_url = 'https://open.er-api.com/v6/latest/USD'
-        currency_response = requests.get(currency_exchange_rate_url)
-        currency_response.raise_for_status()
-        rates = currency_response.json()['rates']
-
-        if currency_code in rates:
-            currency_exchange_rate = Decimal(rates[currency_code]).quantize(Decimal('0.01'))
-            return price_usd * currency_exchange_rate
+            currency_exchange_rate_url = 'https://open.er-api.com/v6/latest/USD'
+            currency_response = requests.get(currency_exchange_rate_url)
+            currency_response.raise_for_status()
+            rates = currency_response.json()['rates']
+            if currency_code in rates:
+                currency_exchange_rate = Decimal(rates[currency_code]).quantize(Decimal('0.01'))
+                return price_usd * currency_exchange_rate
+        except requests.RequestException as e:
+            print(f"\nError during request to OpenExchangeRate API:\n {e}")
+            print("\nFailed to get the exchange rate of fiat currencies.")
 
         # Exchange rate for cryptocurrencies
-        cryptocurrency_exchange_rate_url = 'https://api.coincap.io/v2/assets'
-        crypto_response = requests.get(cryptocurrency_exchange_rate_url)
-        crypto_response.raise_for_status()
-        crypto_data = crypto_response.json()['data']
+        try:
+            cryptocurrency_exchange_rate_url = 'https://api.coincap.io/v2/assets'
+            crypto_response = requests.get(cryptocurrency_exchange_rate_url)
+            crypto_response.raise_for_status()
+            crypto_data = crypto_response.json()['data']
+            amount = next((Decimal(item['priceUsd']).quantize(Decimal('0.0000001')) for item in crypto_data if item['symbol'] == currency_code), None)
+            if amount:
+                return price_usd / amount
+        except requests.RequestException as e:
+            print(f"\nError during request to CoinCap API:\n {e}")
+            print("\nFailed to get the exchange rate of crypto-currencies.")
 
-        amount = next((Decimal(item['priceUsd']).quantize(Decimal('0.0000001')) for item in crypto_data if item['symbol'] == currency_code), None)
-        if amount:
-            return price_usd / amount
 
         return Decimal('0')
 
