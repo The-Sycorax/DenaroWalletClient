@@ -1,5 +1,11 @@
 # Denaro Wallet Client
 
+> **:warning: IMPORTANT: Repository Deprecated :warning:**
+>
+> This repository is no longer maintained.  
+>  :arrow_right: Active development has been moved to: [The-Sycorax/DenaroWalletClient-GUI](https://github.com/The-Sycorax/DenaroWalletClient-GUI)
+
+
 ## Introduction
 **This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency. It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets.** 
 
