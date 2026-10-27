@@ -1,18 +1,38 @@
 # Denaro Wallet Client
 
+---
+
+## Important Note from Developer
+
+> [!IMPORTANT]
+> **This repository has been officially deprecated and is no longer maintained!**
+>
+> **Active development for this wallet client has been moved to: [The-Sycorax/DenaroWalletClient-GUI](https://github.com/The-Sycorax/DenaroWalletClient-GUI)**
+>
+> **Active development for Denaro has also been moved to: https://github.com/The-Sycorax/denaro**
+
+**Some users and I have been coordinating a revival effort for Denaro, and substantial updates have been made to it's codebase in the above repository. However, Denaro's original upstream repository has yet to be updated, but a pull request is planned for the future.**
+
+**If you want to use the wallet client or operate a Denaro node, please use the code and instructions from the repositories linked above.**
+
+### Links:
+* **Denaro Nodes:**
+  * **[https://node.denaro.network](https://node.denaro.network/)** ![Website](https://img.shields.io/website?url=https%3A%2F%2Fnode.denaro.network%2Fdocs&up_message=ONLINE&down_message=OFFLINE&style=flat&label=%20)
+
+  * **[https://node-2.denaro.network](https://node-2.denaro.network/)** ![Website](https://img.shields.io/website?url=https%3A%2F%2Fnode-2.denaro.network%2Fdocs&up_message=ONLINE&down_message=OFFLINE&style=flat&label=%20)
+
+* **Discord Server: [https://discord.gg/4Sq2dK4KMv](https://discord.gg/4Sq2dK4KMv)**
+
+*The information and links above may be periodically updated when needed.*
+
+---
+
 ## Introduction
 **This repo contains the source code for the Denaro Wallet Client, developed for the Denaro cryptocurrency. It has been designed with a strong emphasis on security, providing users with a secure and efficient way to manage their digital assets.** 
 
-**The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports. Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.**
+The wallet client provides essential functionalities such as wallet creation, address generation, transaction processing, balance checking, and wallet imports. Advanced functionalities are also provided, including encryption and decryption capabilities, two-factor authentication (2FA), wallet entry filtering, support for deterministic wallets, and several security mechanisms to protect wallet data.
 
-**Github repo for the Denaro cryptocurrency: https://github.com/denaro-coin/denaro**
-
-## Wallet Security Framework
-Paramount to it's design, the wallet client has been developed with a high-level of security in mind, perticularly for encrypted wallets. It features several protective security measures to safeguard and fortify wallet data. These measures include proof-of-work based brute-force protection, two-factor authentication, double-hashed password verification, and rigorous integrity checks of wallet data. Additionally, there are measures to identify and record unauthorized access attempts, along with an automatic wallet deletion feature which activates after 10 failed access attempts, providing an added layer of defense *([feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*.
-
-Inherent to its architecture, the wallet client deeply inegrates and bakes these security measures directly into the cryptographic processes that are responsible for encrypting and decrypting wallet data. Central to this approach is a unique dual-layer technique that combines both the ChaCha20-Poly1305 and AES-GCM encryption algorithms. 
-
-This encryption method is implemented in stages, beginning with the encryption of individual JSON key-value pairs of wallet data using the dual-layer technique. Afterwhich, the entire JSON entry that contains these encrypted key-value pairs is also encrypted, resulting in multiple layers of encryption. By implementing this multi-layered encryption approach along with the various security mechanisms, the wallet client not only secures wallet data but also substantially fortifies its underlying cryptographic keys against a variety of threats.
+---
 
 ## Installation Guide
 *Note: The Denaro Wallet Client has not been tested on Windows or MacOS and support is unknown at this time. It is reccomended to use the wallet client on Ubuntu/Debian Linux to avoid any compatibility or stability issues.*
@@ -48,7 +68,7 @@ To exit the Python Virtual Environment use:
 deactivate
 ```
 
-------------
+---
 
 ## Usage Documentation
 - ### Command-Line Interface:
@@ -567,14 +587,24 @@ deactivate
         </details>
     </details>
 
-------------
+---
+
+## Wallet Security Framework
+Paramount to it's design, the wallet client has been developed with a high-level of security in mind, perticularly for encrypted wallets. It features several protective security measures to safeguard and fortify wallet data. These measures include proof-of-work based brute-force protection, two-factor authentication, double-hashed password verification, and rigorous integrity checks of wallet data. Additionally, there are measures to identify and record unauthorized access attempts, along with an automatic wallet deletion feature which activates after 10 failed access attempts, providing an added layer of defense *([feat: Wallet Annihilation](https://github.com/The-Sycorax/DenaroWalletClient/commit/e347b6622d47415ddc531e8b3292c96b42128c9a))*.
+
+Inherent to its architecture, the wallet client deeply inegrates and bakes these security measures directly into the cryptographic processes that are responsible for encrypting and decrypting wallet data. Central to this approach is a unique dual-layer technique that combines both the ChaCha20-Poly1305 and AES-GCM encryption algorithms. 
+
+This encryption method is implemented in stages, beginning with the encryption of individual JSON key-value pairs of wallet data using the dual-layer technique. Afterwhich, the entire JSON entry that contains these encrypted key-value pairs is also encrypted, resulting in multiple layers of encryption. By implementing this multi-layered encryption approach along with the various security mechanisms, the wallet client not only secures wallet data but also substantially fortifies its underlying cryptographic keys against a variety of threats.
+
+---
 
 ## Disclaimer
 
-Neither The-Sycorax nor contributors of this project assume liability for any loss of funds incurred through the use of this software! This software is provided 'as is' under the [MIT License](LICENSE) without guarantees or warrenties of any kind, express or implied. It is strongly recommended that users back up their cryptographic keys. User are solely responsible for the security and management of their assets! The use of this software implies acceptance of all associated risks, including financial losses, with no liability on The-Sycorax or contributors of this project.
+Neither The-Sycorax nor contributors of this project assume liability for any loss of funds incurred through the use of this software! This software is provided "AS IS" under the [MIT License](LICENSE) without guarantees or warrenties of any kind, express or implied. 
+
+It is strongly recommended that users back up their cryptographic keys. Users are solely responsible for the security and management of their assets! The use of this software implies acceptance of all associated risks, including financial losses, with no liability on The-Sycorax or contributors of this project.
 
 ------------
 
 ## License
-The Denaro Wallet Client is released under the terms of the MIT license. See [LICENSE](LICENSE) for more
-information or see https://opensource.org/licenses/MIT.
+The Denaro Wallet Client is released under the terms of the MIT license. See [LICENSE](LICENSE) for more information or see https://opensource.org/licenses/MIT.
